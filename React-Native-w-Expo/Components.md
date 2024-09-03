@@ -14,10 +14,12 @@
     <summary>Image</summary>
         Used to render images.
         - Local: 
+                ````md
                 ```js
                 import icon from './assets/icon.png'
-                <Image source={icon} style={{ width:100, height:100 }}/>
+                <Image source={icon} style ={{ width: 100, height: 100 }} />
                 ```
+                ````
         - External:
                 ```js
                  <Image source={{ uri: "URL" }} style = {{ width: 215, height_ 294 }} />
