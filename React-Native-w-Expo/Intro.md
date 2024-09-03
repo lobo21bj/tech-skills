@@ -11,7 +11,7 @@ It requires to write the components with JavaScript and React Native will transl
 - Fast refresh: it's not require to compile to see the changes.
 - Unique code for Andriod & iOS.
 - Code from web can be recycled.
-- IF statements can be included for each SO specifically.
+- IF statements can be included for each OS specifically.
 - Community.
 - Acceptable peformance.
 - OTA Updates (Over The Air) without passing thru the App Stores.

@@ -12,16 +12,31 @@
 
 <details>
     <summary>Image</summary>
-        Used to render images.
-        - Local: 
-                ````md
-                ```js
-                import icon from './assets/icon.png'
-                <Image source={icon} style ={{ width: 100, height: 100 }} />
-                ```
-                ````
-        - External:
-                ```js
-                 <Image source={{ uri: "URL" }} style = {{ width: 215, height_ 294 }} />
-                 ```
+Used to render images.
+
+- Internal: 
+```js
+    import icon from './assets/icon.png'
+    <Image source={icon} style ={{ width: 100, height: 100 }} />
+```
+- External:
+```js
+    <Image source={{ uri: "URL" }} style = {{ width: 215, height_ 294 }} />
+```
+</details>
+
+<details>
+    <summary>StatusBar (from EXPO)</summary>
+        Changes the mobile status bar color.
+</details>
+
+<details>
+    <summary>Button</summary>
+        Native button component for each OS, cannot be styled.
+        
+Sample code:
+
+```js
+    <Button title="Click here" onPress={() => alert('Warning')} />
+```
 </details>
