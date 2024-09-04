@@ -1,3 +1,5 @@
+<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSlGmKtrnxElpqw3AExKXPWWBulcwjlvDJa1Q&s" width="150" height="150" align="center"/>
+
 # React Native
 [Source](React.dev)
 
@@ -18,10 +20,14 @@ It requires to write the components with JavaScript and React Native will transl
 
 ## Cons
 - Lower performance than native developments.
+---
+&nbsp;
 
+<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRRRS42xTcnXMlC85s502uVAhzdGqq_23-bXA&s" width="150" height="150" align="center"/>
 
 # EXPO
 Created by Evan Bacon.
+
 [Source](Expo.dev)
 
 It's a React Native framework that simplifies the routing and allows you to open the Android, iOS or web emulator easily.
