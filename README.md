@@ -5,6 +5,7 @@ Repo dedicated for the learning journeys I've nade on the following programming 
 
 ## 📝 Table of Contents
 
+- [Unix](#Unix)
 - [React / React Native](#React-Native-w-Expo)
 - [Python](Python)
 - [Docker & K8s](DockerK8s)
