@@ -1,4 +1,5 @@
 # Certified Kubernetes Application Developer Prep
+<img src="https://media.dev.to/cdn-cgi/image/width=1000,height=420,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fi%2Fyonuc6h44xad2jef5w08.png" width=500 align="center" >
 
 ## Architecture
 **Nodes** are the machines in the cluster.
@@ -133,3 +134,74 @@ References:
 
 * **Distributes requests:**
   * Across Pods in the group
+
+<img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1628000314071/HlHf3l2NI.png?auto=compress,format&format=webp">
+
+&nbsp;
+
+**Example of manifest file for creation:** 
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: webserver
+  name: webserver
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: webserver
+  type: NodePort
+```
+&nbsp;
+Get the status of your services
+```sh
+kubectl get service
+```
+>Sample output
+<img src="https://i.postimg.cc/5tVxRcrn/kubectl-services.jpg">
+
+* kubernetes is the 
+* **NAME:** is the service unique name.
+* **TYPE:** Service type.
+* **CLUSTER-IP:** Would be the private IP address.
+* **EXTERNAL-IP:** Will show the public IP address if applies.
+* **PORT:** A port will automatically be assigned if it's not defined.
+* **AGE:** Since when the services are running.
+
+Get more full description of your service
+
+```sh
+kubectl describe service webserver
+```
+>Sample Output
+<img src="https://i.postimg.cc/4y7k3wMY/image.png">
+When Endpoints will list each Pod IP of the selected group (selector: app=webserver) along with the container port.
+
+&nbsp;
+
+Try it out:
+Get the IP of the node
+```sh
+kubectl describe nodes | grep -i address -A 1
+```
+>Output
+<img src="https://i.postimg.cc/5N51QKyz/image.png">
+
+Test the webserver by running below command
+```sh
+curl 192.168.64.2:32337
+```
+
+#### Types
+| Characteristic | ClusterIP | NodePort | LoadBalancer | ExternalName | Headless | Accessibility | Use case |
+|---|---|---|---|---|---|---|---|
+| Interface with external service discovery systems | Yes | Yes | Yes | Yes | Yes | External | Advanced custom networking that avoids automatic Kubernetes proxying |
+| Client connection type | Stable cluster-internal IP address or DNS name | Port on Node IP address | IP address of external load balancer | Stable cluster-internal IP address or DNS name | Stable-cluster internal IP address or DNS name that also enables DNS resolution of the Pod IPs behind the Service | Internal | Internal communications between workloads |
+| External dependencies | None | Free port on each Node | A Load Balancer component (typically billable by your cloud provider) | None | None | External | Accessing workloads outside the cluster, for one-off or development use |
+| Suitable for | Internal communications between workloads | Accessing workloads outside the cluster, for one-off or development use | Serving publicly accessible web apps and APIs in production | Decoupling your workloads from direct dependencies on external service URLs | Internal communications between workloads | External | Expose Pods to other Pods in your cluster |
+| Expose Pods to other Pods in your cluster | Yes | No | No | No | Yes | Internal | Expose Pods to other Pods in your cluster |
+| Expose Pods on a specific Port of each Node | No | Yes | No | No | No | External | Expose Pods on a specific Port of each Node |
+| Expose Pods using a cloud load balancer resource | No | No | Yes | No | No | External | Expose Pods using a cloud load balancer resource |
+| Configure a cluster DNS CNAME record that resolves to a specified address | No | No | No | Yes | No | External | Configure a cluster DNS CNAME record that resolves to a specified address |
