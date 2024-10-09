@@ -1,5 +1,7 @@
 # Certified Kubernetes Application Developer Prep
-<img src="https://images.credly.com/images/cc8adc83-1dc6-4d57-8e20-22171247e052/blob" width=300 align="center" >
+<p align="center">
+<img src="https://images.credly.com/images/cc8adc83-1dc6-4d57-8e20-22171247e052/blob" width=300 >
+</p>
 
 ## Architecture
 **Nodes** are the machines in the cluster.
