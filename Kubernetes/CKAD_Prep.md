@@ -1,5 +1,5 @@
 # Certified Kubernetes Application Developer Prep
-<img src="https://media.dev.to/cdn-cgi/image/width=1000,height=420,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fi%2Fyonuc6h44xad2jef5w08.png" width=500 align="center" >
+<img src="https://www.globalitsuccess.com/images/product/Certified-Kubernetes-Application-Developer-small-new.webp" width=300 align="center" >
 
 ## Architecture
 **Nodes** are the machines in the cluster.
@@ -205,3 +205,91 @@ curl 192.168.64.2:32337
 | Expose Pods on a specific Port of each Node | No | Yes | No | No | No | External | Expose Pods on a specific Port of each Node |
 | Expose Pods using a cloud load balancer resource | No | No | Yes | No | No | External | Expose Pods using a cloud load balancer resource |
 | Configure a cluster DNS CNAME record that resolves to a specified address | No | No | No | Yes | No | External | Configure a cluster DNS CNAME record that resolves to a specified address |
+
+---
+
+### Multi-Container Pods
+
+Refers to multiple containers within the same pod.
+
+<img src="https://i.postimg.cc/650MKXjy/image.png">
+&nbsp;
+
+#### Namespace
+- Separate resources according to users, environments or applications.
+- Role based access control (RBAC) to secure access per Namespace.
+- Using Namespaces is a best practice.
+
+It can be created with below command
+```sh
+Kubectl create -f 3.1-namespace.yaml
+```
+
+where 3.1-namespace.yaml contents is:
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: microservice
+  labels:
+    app: counter
+```
+&nbsp;
+
+The multi-container Pod is created with this command. It's associated to aforementioned namespace.
+```sh
+Kubectl create -f 3.2-multi_container.yaml -n microservice
+```
+And the yaml content is
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: redis
+      image: redis:latest
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 6379
+    
+    - name: server
+      image: lrakai/microservices:server-v1
+      ports:
+        - containerPort: 8080
+      env:
+        - name: REDIS_URL
+          value: redis://localhost:6379
+
+    - name: counter
+      image: lrakai/microservices:counter-v1
+      env:
+        - name: API_URL
+          value: http://localhost:8080
+
+    - name: poller
+      image: lrakai/microservices:poller-v1
+      env:
+        - name: API_URL
+          value: http://localhost:8080
+```
+> [!NOTE]
+> Redis is an open source data structure server. It belongs to the class of NoSQL databases known as key/value stores.
+
+&nbsp;
+
+Command to check event logs related to pod **app** in **microservice** namespace
+```sh
+Kubectl describe -n microservice pod app
+```
+<img src="https://i.postimg.cc/jdzGJm8b/image.png">
+&nbsp;
+
+To check the logs associated to each container
+```sh
+Kubectl logs -n microservice app counter --tail 10       # last 10 lines of counter container
+```
+```sh
+Kubectl logs -n microservice app poller -f               # interactive of poller container
+```
