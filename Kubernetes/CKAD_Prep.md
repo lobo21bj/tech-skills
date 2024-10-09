@@ -293,3 +293,198 @@ Kubectl logs -n microservice app counter --tail 10       # last 10 lines of coun
 ```sh
 Kubectl logs -n microservice app poller -f               # interactive of poller container
 ```
+---
+
+### Service Discovery
+&nbsp;
+
+**What are Kubernetes Services?**
+
+In a Kubernetes cluster, Services act as a layer of abstraction between pods and their clients. They provide a stable network endpoint for a set of pods, regardless of individual pod IP address changes.
+
+**Why Services?**
+
+* **Supports multi-pod design:** Services allow you to scale applications horizontally by adding more pods without affecting clients.
+* **Provides static endpoint:** Each Service has a fixed IP address and port, making it easy for clients to connect.
+* **Handles Pod IP changes:** When pods are added, removed, or replaced, Services automatically update their internal routing table to ensure clients can always reach the correct pods.
+* **Load balancing:** Services can distribute traffic across multiple pods based on various load balancing algorithms.
+&nbsp;
+
+**Service Discovery Mechanisms**
+
+Kubernetes offers two primary mechanisms for service discovery:
+
+#### Environment Variables
+* **Automatic injection:** Services automatically inject their IP address and port into containers as environment variables.
+* **Naming conventions:** Environment variables follow specific naming conventions based on the service name, making it easy for applications to access them.
+
+#### DNS
+* **Automatic creation:** Kubernetes creates DNS records for Services in the cluster's DNS.
+* **Container configuration:** Containers are automatically configured to use the cluster's DNS, allowing them to resolve service names to IP addresses.
+
+**Visual Representation**
+
+<img src="https://i.postimg.cc/htVTnbPM/image.png">
+&nbsp;
+
+**Key Points**
+* Services are essential for building scalable and resilient applications in Kubernetes.
+* They provide a stable network endpoint for a set of pods.
+* Services use environment variables and DNS for service discovery.
+* Understanding Services is crucial for effective Kubernetes development and operations.
+
+
+**Creating the tiers**
+
+We can create multiple resources in one unique manifest yaml file by separating them with "---"
+```sh
+Kubectl create -f 4.2-data_tier.yaml -n service-discovery
+```
+
+4.2-data_tier.yaml content
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-tier
+  labels:
+    app: microservices
+spec:
+  ports:
+  - port: 6379
+    protocol: TCP # default 
+    name: redis # optional when only 1 port
+  selector:
+    tier: data 
+  type: ClusterIP # default
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: data-tier
+  labels:
+    app: microservices
+    tier: data
+spec:
+  containers:
+    - name: redis
+      image: redis:latest
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 6379
+```
+&nbsp;
+
+To describe the newly created tier
+```sh
+Kubectl describe -n service-discovery service data-tier
+```
+> It has a public IP and it points to pod endpoint.
+<img src="https://i.postimg.cc/vT1xN5Nr/image.png">
+&nbsp;
+
+Moving on lets create the app tier
+```sh
+Kubectl create -f 4.3-app_tier.yaml -n service-discovery
+```
+
+4.3-app_tier.yaml content
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-tier
+  labels:
+    app: microservices
+spec:
+  ports:
+  - port: 8080
+  selector:
+    tier: app
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-tier
+  labels:
+    app: microservices
+    tier: app
+spec:
+  containers:
+    - name: server
+      image: lrakai/microservices:server-v1
+      ports:
+        - containerPort: 8080
+      env:
+        - name: REDIS_URL
+          # Environment variable service discovery
+          # Naming pattern:
+          #   IP address: <all_caps_service_name>_SERVICE_HOST
+          #   Port: <all_caps_service_name>_SERVICE_PORT
+          #   Named Port: <all_caps_service_name>_SERVICE_PORT_<all_caps_port_name>
+          value: redis://$(DATA_TIER_SERVICE_HOST):$(DATA_TIER_SERVICE_PORT_REDIS)
+          # In multi-container example value was
+          # value: redis://localhost:6379 
+```
+
+The app gets the host and port of data tier via environment variables
+```
+$(DATA_TIER_SERVICE_HOST) & $(DATA_TIER_SERVICE_PORT_REDIS)
+```
+&nbsp;
+
+Creating the support tier
+```sh
+Kubectl create -f 4.4-support_tier.yaml -n service-discovery
+```
+
+4.4-support_tier.yaml content
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: support-tier
+  labels:
+    app: microservices
+    tier: support
+spec:
+  containers:
+
+    - name: counter
+      image: lrakai/microservices:counter-v1
+      env:
+        - name: API_URL
+          # DNS for service discovery
+          # Naming pattern:
+          #   IP address: <service_name>.<service_namespace>
+          #   Port: needs to be extracted from SRV DNS record
+          value: http://app-tier.service-discovery:8080
+
+    - name: poller
+      image: lrakai/microservices:poller-v1
+      env:
+        - name: API_URL
+          # omit namespace to only search in the same namespace
+          value: http://app-tier:$(APP_TIER_SERVICE_PORT)
+```
+> It uses DNS. If it will be used in the same namespace only, you can ommit the service-discovery.
+&nbsp;
+
+**Final state**
+```sh
+Kubectl get pods -n service-discovery
+```
+<img src="https://i.postimg.cc/tRLzHgNq/image.png">
+
+&nbsp;
+
+App is up and running...
+
+```sh
+Kubectl logs -n service-discovery support-tier poller -f
+```
+<img src="https://i.postimg.cc/R0V7TJ4R/image.png">
+
+---
+
+### Autoscaling
