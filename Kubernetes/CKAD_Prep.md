@@ -181,6 +181,9 @@ kubectl describe service webserver
 <img src="https://i.postimg.cc/4y7k3wMY/image.png">
 When Endpoints will list each Pod IP of the selected group (selector: app=webserver) along with the container port.
 
+Another example of ClusterIP service implementation
+<img src="https://i.postimg.cc/d0VrVSBq/image.png">
+
 &nbsp;
 
 Try it out:
@@ -208,6 +211,17 @@ curl 192.168.64.2:32337
 | Expose Pods using a cloud load balancer resource | No | No | Yes | No | No | External | Expose Pods using a cloud load balancer resource |
 | Configure a cluster DNS CNAME record that resolves to a specified address | No | No | No | Yes | No | External | Configure a cluster DNS CNAME record that resolves to a specified address |
 
+<img src="https://i.postimg.cc/rFh8LnKG/image.png">
+&nbsp;
+
+<img src="https://i.postimg.cc/HkcC1pGH/image.png">
+&nbsp;
+
+<img src="https://i.postimg.cc/5tdDcLqq/image.png">
+
+> [!WARNING]
+> It's not recommended to use NodePort for external connections!
+
 ---
 
 ### Multi-Container Pods
@@ -224,7 +238,7 @@ Refers to multiple containers within the same pod.
 
 It can be created with below command
 ```sh
-Kubectl create -f 3.1-namespace.yaml
+kubectl create -f 3.1-namespace.yaml
 ```
 
 where 3.1-namespace.yaml contents is:
@@ -240,7 +254,7 @@ metadata:
 
 The multi-container Pod is created with this command. It's associated to aforementioned namespace.
 ```sh
-Kubectl create -f 3.2-multi_container.yaml -n microservice
+kubectl create -f 3.2-multi_container.yaml -n microservice
 ```
 And the yaml content is
 ```yaml
@@ -283,17 +297,17 @@ spec:
 
 Command to check event logs related to pod **app** in **microservice** namespace
 ```sh
-Kubectl describe -n microservice pod app
+kubectl describe -n microservice pod app
 ```
 <img src="https://i.postimg.cc/jdzGJm8b/image.png">
 &nbsp;
 
 To check the logs associated to each container
 ```sh
-Kubectl logs -n microservice app counter --tail 10       # last 10 lines of counter container
+kubectl logs -n microservice app counter --tail 10       # last 10 lines of counter container
 ```
 ```sh
-Kubectl logs -n microservice app poller -f               # interactive of poller container
+kubectl logs -n microservice app poller -f               # interactive of poller container
 ```
 ---
 
@@ -340,7 +354,7 @@ Kubernetes offers two primary mechanisms for service discovery:
 
 We can create multiple resources in one unique manifest yaml file by separating them with "---"
 ```sh
-Kubectl create -f 4.2-data_tier.yaml -n service-discovery
+kubectl create -f 4.2-data_tier.yaml -n service-discovery
 ```
 
 4.2-data_tier.yaml content
@@ -379,7 +393,7 @@ spec:
 
 To describe the newly created tier
 ```sh
-Kubectl describe -n service-discovery service data-tier
+kubectl describe -n service-discovery service data-tier
 ```
 > It has a public IP and it points to pod endpoint.
 <img src="https://i.postimg.cc/vT1xN5Nr/image.png">
@@ -387,7 +401,7 @@ Kubectl describe -n service-discovery service data-tier
 
 Moving on lets create the app tier
 ```sh
-Kubectl create -f 4.3-app_tier.yaml -n service-discovery
+kubectl create -f 4.3-app_tier.yaml -n service-discovery
 ```
 
 4.3-app_tier.yaml content
@@ -437,7 +451,7 @@ $(DATA_TIER_SERVICE_HOST) & $(DATA_TIER_SERVICE_PORT_REDIS)
 
 Creating the support tier
 ```sh
-Kubectl create -f 4.4-support_tier.yaml -n service-discovery
+kubectl create -f 4.4-support_tier.yaml -n service-discovery
 ```
 
 4.4-support_tier.yaml content
@@ -474,7 +488,7 @@ spec:
 
 **Final state**
 ```sh
-Kubectl get pods -n service-discovery
+kubectl get pods -n service-discovery
 ```
 <img src="https://i.postimg.cc/tRLzHgNq/image.png">
 
@@ -483,10 +497,255 @@ Kubectl get pods -n service-discovery
 App is up and running...
 
 ```sh
-Kubectl logs -n service-discovery support-tier poller -f
+kubectl logs -n service-discovery support-tier poller -f
 ```
 <img src="https://i.postimg.cc/R0V7TJ4R/image.png">
+&nbsp;
+
+#### MultiPort configuration
+
+<img src="https://i.postimg.cc/FF3dN44y/image.png">
+
+>each port can have a name defined for easier configuration
+<img src="https://i.postimg.cc/vB9BYWpY/image.png">
+
+
+---
+
+### Deployments
+
+**Deployment** is a template to create Pods. It's used to create replicas, which are copies of a pod.
+The **Deployment Controller** is a master component responsible for converging the actual state of the system to the desired state. 
+
+- **Replicas:** A Deployment manages multiple instances (replicas) of a Pod.
+- **Desired State:** It defines the target configuration for the application.
+- **Deployment Controller:** Ensures that the actual state aligns with the desired state.
+
+**Example:**
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app
+        image: my-image:latest
+```
+> [!NOTE]
+> This deployment creates 3 replicas of a Pöd with the label "app=my-app"
+
+> [!WARNING]
+> API Grouping: Kubernetes groups its resources into different API groups for better organization and scalability.
+> The core API group is represented as v1, which includes core resources like Pod, Service, ConfigMap, etc.
+> The apps API group includes resources related to applications, such as Deployment, DaemonSet, StatefulSet, etc.
+
+&nbsp;
+
+The deployment is app and running:
+```sh
+kubectl get -n deployments deployments
+```
+<img src="https://i.postimg.cc/2S4kq4G3/image.png">
+
+&nbsp;
+
+```sh
+kubectl get -n deployments pods
+```
+<img src="https://i.postimg.cc/7LwxSft9/image.png">
+
+&nbsp;
+
+If we want to apply horizontal scalling and scale up the app-tier & support-tier deployment to 5 replicas:
+```sh
+kubectl scale -n deployments deployments app-tier support-tier --replicas=5
+```
+
+<img src="https://i.postimg.cc/3RbYM98f/image.png">
+
+&nbsp;
+
+We can also validate that app-tier service now has 5 endpoints:
+
+```sh
+kubectl describe -n deployments service app-tier
+```
+
+<img src="https://i.postimg.cc/brD8qbdy/image.png">
 
 ---
 
 ### Autoscaling
+
+**Autoscaling Deployments** in Kubernetes allow you to automatically scale the number of replicas of a Deployment based on resource utilization, such as CPU or custom metrics.
+
+**Key features:**
+
+- **Automatic Scaling:** Adjusts the number of replicas to match demand.
+- **CPU Utilization:** Scales based on the percentage of CPU used by the Pods.
+- **Custom Metrics:** Can use other metrics like memory usage, network traffic, or application-specific data.
+- **Target CPU:** Defines the desired CPU utilization level.
+- **Min/Max Replicas:** Sets limits on the minimum and maximum number of replicas.
+
+In order to use autoscalling **Metrics** are required.
+- Autoscalling depends on metrics being collected.
+- **Metrics Server** is one solution for collecting metrics.
+- Several manifest files are used to deploy **Metrics Server** ([Repos]([Metrics](https://github.com/kubernets-sigs/metrics-server)))
+
+To install **Metrics Server**:
+
+```sh
+kubectl apply -f metrics-server/
+```
+
+&nbsp;
+
+Once deployed we see the status of the running pods
+
+```sh
+kubectl top pods -n deployments
+```
+<img src="https://i.postimg.cc/66rxf9R1/image.png">
+
+&nbsp;
+
+We can also specify resource request of 20m of CPU. in *6.1-app_tier_cpu_request.yaml*.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-tier
+  labels:
+    app: microservices
+spec:
+  ports:
+  - port: 8080
+  selector:
+    tier: app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-tier
+  labels:
+    app: microservices
+    tier: app
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      tier: app
+  template:
+    metadata:
+      labels:
+        app: microservices
+        tier: app
+    spec:
+      containers:
+      - name: server
+        image: lrakai/microservices:server-v1
+        ports:
+          - containerPort: 8080
+        resources:
+          requests:
+            cpu: 20m # 20 milliCPU / 0.02 CPU
+        env:
+          - name: REDIS_URL
+            # Environment variable service discovery
+            # Naming pattern:
+            #   IP address: <all_caps_service_name>_SERVICE_HOST
+            #   Port: <all_caps_service_name>_SERVICE_PORT
+            #   Named Port: <all_caps_service_name>_SERVICE_PORT_<all_caps_port_name>
+            value: redis://$(DATA_TIER_SERVICE_HOST):$(DATA_TIER_SERVICE_PORT_REDIS)
+            # In multi-container example value was
+            # value: redis://localhost:6379 
+```
+
+```sh
+kubectl create -f 6.1-app_tier_cpu_request.yaml -n deployments
+```
+> ![CUATION]
+> Fails cause the resources already exists
+
+```sh
+kubectl apply -f 6.1-app_tier_cpu_request.yaml -n deployments
+```
+<img src="https://i.postimg.cc/BbsyVKD7/image.png">
+
+&nbsp;
+
+#### HorizontalPodAutoscaler component
+6.2-autoscale.yaml content:
+```yaml
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app-tier
+  labels:
+    app: microservices
+    tier: app
+spec:
+  maxReplicas: 5
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app-tier
+  targetCPUUtilizationPercentage: 70
+```
+
+```sh
+kubectl create -f 6.2-autoscale.yaml -n deployments
+```
+
+Once done, we can check the status in real time by running below, it will keep updating every 1 s.
+
+```sh
+watch -n 1 kubectl get -n deployments deployment
+```
+
+By checking the
+
+```sh
+kubectl api-resources
+```
+
+we see that *hpa* is the alias of HorizontalPodAutoscaler resource.
+
+To see full desciption of the resource including a list of events
+```sh
+kubectl describe -n deployments hpa
+```
+<img src="https://i.postimg.cc/wxVbB3DH/image.png">
+
+&nbsp;
+
+To see the actual status of the hpa
+```sh
+kubectl get -n deployments hpa
+```
+<img src="https://i.postimg.cc/xT1pNYPm/image.png">
+
+&nbsp;
+
+If you want edit an apply it you can go with:
+
+```sh
+kubectl edit -n deployments hpa
+```
+
+---
+
+### Rolling Updates and Rollbacks
