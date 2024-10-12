@@ -749,3 +749,384 @@ kubectl edit -n deployments hpa
 ---
 
 ### Rolling Updates and Rollbacks
+
+Kubernetes provides multiple deployment strategies for managing updates to applications. The goal is to update applications with minimal downtime or disruptions. Below are the four common deployment strategies supported in Kubernetes.
+
+
+
+
+<details>
+<summary><b>1. RollingUpdate (Default)</b> </summary>
+
+The default deployment strategy for Kubernetes Deployments. It allows you to incrementally replace old pods with new ones while maintaining the application’s availability.
+
+##### Key Parameters:
+- **maxUnavailable**: Maximum number of pods that can be unavailable during the update. Default is 25%.
+- **maxSurge**: Maximum number of extra pods that can be created during the update. Default is 25%.
+
+##### Example:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    spec:
+      containers:
+        - name: my-app-container
+          image: my-app:2.0
+```
+
+##### Benefits:
+- Ensures application availability during updates.
+- Gradual rollout allows monitoring for issues.
+
+##### Drawbacks:
+- May take longer depending on the number of replicas and settings of `maxUnavailable` and `maxSurge`.
+</details>
+
+<details>
+<summary><b>2. Recreate</b></summary>
+
+In the `Recreate` strategy, all old pods are terminated before new pods are created. This means there will be downtime during the deployment process.
+
+##### Example:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      containers:
+        - name: my-app-container
+          image: my-app:2.0
+```
+
+#### Benefits:
+- Ensures that only the new version is running, with no overlap between versions.
+
+#### Drawbacks:
+- Downtime is guaranteed while the old pods are terminated and new ones are spun up.
+</details>
+
+<details>
+<summary><b>3. Blue-Green</b></summary>
+
+In a Blue-Green deployment, two environments (blue and green) are maintained. The "blue" environment runs the current version, and the "green" environment is the new version. Once the new version is verified, traffic is switched to the "green" environment.
+
+##### Steps:
+1. Deploy the new version to the green environment (without impacting blue).
+2. Once verified, switch traffic to the green environment.
+3. Optionally, keep the blue environment as a backup until confident.
+
+##### Example (simplified workflow):
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-green
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: my-app-container
+          image: my-app:2.0
+```
+
+##### Benefits:
+- Zero downtime during the switch.
+- Quick rollback by switching traffic back to the blue environment.
+
+##### Drawbacks:
+- Requires double the resources (both environments running simultaneously).
+- Switching traffic can introduce complexity.
+</details>
+
+<details>
+<summary><b>4. Canary</b></summary>
+
+Canary deployments involve releasing the new version to a small subset of users first (a "canary" group). Based on feedback and performance, the new version is gradually rolled out to the rest of the users.
+
+##### Steps:
+1. Deploy the new version to a small percentage of the user base.
+2. Monitor the new version for issues.
+3. Gradually increase the percentage of users directed to the new version until 100%.
+
+##### Example (simplified workflow):
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-canary
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    spec:
+      containers:
+        - name: my-app-container
+          image: my-app:2.0
+```
+> [!NOTE]
+> In this example, the new canary version could start with 10% of the traffic and gradually increase.
+
+#### Benefits:
+- Safer and incremental rollout, allowing testing with a subset of users.
+- Easier to catch issues early before a full rollout.
+
+#### Drawbacks:
+- Slightly more complex to configure and monitor.
+- Requires constant monitoring during the gradual rollout.
+</details>
+
+&nbsp;
+
+#### Conclusion
+
+When choosing a deployment strategy in Kubernetes, consider your application's availability requirements and resource constraints. Here's a quick summary:
+
+- **RollingUpdate**: Default and gradual rollout. Ideal for applications requiring high availability.
+- **Recreate**: Full downtime but simple. Suitable for non-critical applications.
+- **Blue-Green**: Zero downtime but resource-intensive. Best for large-scale, mission-critical applications.
+- **Canary**: Safe, incremental rollout. Suitable for applications where testing with a subset of users is beneficial.
+
+---
+
+### Probes
+
+Kubernetes provides mechanisms to check the health and status of containers running inside Pods. These mechanisms are called **Probes**. A probe can be used to determine the readiness or liveness of a container and help ensure high availability and efficient resource utilization in your cluster.
+
+##### Types of Probes
+
+1. **Liveness Probe**:
+    - Checks if the application running in the container is still alive.
+    - If the liveness probe fails, the container is killed and restarted according to the `restartPolicy`.
+  
+2. **Readiness Probe**:
+    - Checks if the application is ready to start serving traffic.
+    - If the readiness probe fails, the Pod is temporarily removed from the Service’s load balancer, but the container is not restarted.
+  
+3. **Startup Probe**:
+    - Checks whether the application within a container has started.
+    - Useful for slow-starting containers.
+    - After the startup probe succeeds, Kubernetes switches to using the liveness probe.
+
+&nbsp;
+
+##### Probe Types by Mechanism
+
+Kubernetes provides three types of mechanisms to perform probes:
+
+1. **HTTP Probe**:
+    - Kubernetes sends an HTTP GET request to the container. If the response has a status code greater than or equal to 200 and less than 400, the probe is considered successful.
+
+    ```yaml
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8080
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    ```
+
+2. **TCP Socket Probe**:
+    - Kubernetes tries to establish a TCP connection on the specified port of the container. If the connection can be established, the probe is considered successful.
+
+    ```yaml
+    livenessProbe:
+      tcpSocket:
+        port: 3306
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    ```
+
+3. **Exec Probe**:
+    - Kubernetes executes a command inside the container. If the command exits with a status code of 0, the probe is successful.
+
+    ```yaml
+    livenessProbe:
+      exec:
+        command:
+        - cat
+        - /tmp/healthy
+      initialDelaySeconds: 5
+      periodSeconds: 5
+    ```
+
+#### Key Probe Parameters
+
+- `initialDelaySeconds`: The number of seconds after the container starts before the first probe is initiated.
+- `periodSeconds`: How often (in seconds) to perform the probe.
+- `timeoutSeconds`: Number of seconds after which the probe times out if no response is received.
+- `failureThreshold`: When a probe fails, Kubernetes will try `failureThreshold` times before considering the container to have failed.
+- `successThreshold`: Minimum consecutive successes for the probe to be considered successful after it fails.
+
+#### Example 
+data-tier deployment
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-tier
+  labels:
+    app: microservices
+spec:
+  ports:
+  - port: 6379
+    protocol: TCP # default 
+    name: redis # optional when only 1 port
+  selector:
+    tier: data 
+  type: ClusterIP # default
+---
+apiVersion: apps/v1 # apps API group
+kind: Deployment
+metadata:
+  name: data-tier
+  labels:
+    app: microservices
+    tier: data
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tier: data
+  template:
+    metadata:
+      labels:
+        app: microservices
+        tier: data
+    spec: # Pod spec
+      containers:
+      - name: redis
+        image: redis:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 6379
+            name: redis
+        livenessProbe:
+          tcpSocket:
+            port: redis # named port
+          initialDelaySeconds: 15
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+```
+&nbsp;
+
+app-tier deployment
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-tier
+  labels:
+    app: microservices
+spec:
+  ports:
+  - port: 8080
+  selector:
+    tier: app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-tier
+  labels:
+    app: microservices
+    tier: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tier: app
+  template:
+    metadata:
+      labels:
+        app: microservices
+        tier: app
+    spec:
+      containers:
+      - name: server
+        image: lrakai/microservices:server-v1
+        ports:
+          - containerPort: 8080
+            name: server
+        env:
+          - name: REDIS_URL
+            # Environment variable service discovery
+            # Naming pattern:
+            #   IP address: <all_caps_service_name>_SERVICE_HOST
+            #   Port: <all_caps_service_name>_SERVICE_PORT
+            #   Named Port: <all_caps_service_name>_SERVICE_PORT_<all_caps_port_name>
+            value: redis://$(DATA_TIER_SERVICE_HOST):$(DATA_TIER_SERVICE_PORT_REDIS)
+            # In multi-container example value was
+            # value: redis://localhost:6379 
+          - name: DEBUG
+            value: express:*
+        livenessProbe:
+          httpGet:
+            path: /probe/liveness
+            port: server
+          initialDelaySeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /probe/readiness
+            port: server
+          initialDelaySeconds: 3
+```
+
+---
+
+### Init Containers
+
+Init Containers allow you to perform tasks before main application containers have an opportunity to start.
+It's useful for checking preconditions and preparing dependencies.
+They run every time a Pod is created and use their own image.
+
+##### Usage
+
+Inside app-tier deployment at the containers level
+```yaml
+initContainers:
+        - name: await-redis
+          image: lrakai/microservices:server-v1
+          env:
+          - name: REDIS_URL
+            value: redis://$(DATA_TIER_SERVICE_HOST):$(DATA_TIER_SERVICE_PORT_REDIS)
+          command:
+            - npm
+            - run-script
+            - await-redis
+```
+If we check the status of the Pod once is initialized..
+
+```sh
+kubectl -n probes describe pods
+```
+
+<img src="https://i.postimg.cc/GpT2rz8X/image.png">
+
+---
+
+### Volumes
