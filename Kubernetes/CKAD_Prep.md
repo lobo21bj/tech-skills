@@ -1130,3 +1130,517 @@ kubectl -n probes describe pods
 ---
 
 ### Volumes
+
+Kubernetes Volumes provide a way for containers to store and share data beyond their ephemeral lifecycle. While the container's file system is temporary, a volume allows data to persist as long as the Pod is running, and in some cases, even beyond that.
+
+#### Why Use Volumes?
+
+- **Persistent Data**: Containers' file systems are ephemeral. When a container crashes or restarts, all data inside it is lost. Volumes provide a mechanism to store data that needs to persist.
+- **Data Sharing**: Multiple containers within the same Pod can share the same volume, allowing them to access the same files or directories.
+- **Integration with External Storage**: Volumes can be connected to external storage systems, allowing you to use cloud providers, NFS, or other storage solutions.
+
+#### Volume Types
+
+Kubernetes supports various types of volumes, each suited to different use cases:
+
+<details>
+<summary><b>1. emptyDir</b></summary>
+
+- **Purpose**: Temporary storage for the lifetime of the Pod.
+- **Use Case**: For data sharing between containers in the same Pod, scratch space, or temporary storage.
+- **Lifecycle**: Data is deleted when the Pod is deleted.
+
+Example:
+```yaml
+volumes:
+  - name: cache-volume
+    emptyDir: {}
+```
+</details>
+
+<details>
+<summary><b>2. hostPath</b></summary>
+
+- **Purpose**: Mounts a file or directory from the host node's filesystem into the Pod.
+- **Use Case**: Accessing specific files or directories on the host machine.
+- **Security Warning**: Can compromise security since it gives containers access to the host machine's filesystem.
+
+Example:
+```yaml
+volumes:
+  - name: host-volume
+    hostPath:
+      path: /data
+```
+</details>
+
+<details>
+<summary><b>3. persistentVolumeClaim (PVC)</b></summary>
+
+- **Purpose**: Claims persistent storage resources.
+- **Use Case**: Allows users to dynamically request storage based on predefined `PersistentVolumes` (PVs) or through a storage class.
+- **Lifecycle**: Data can persist beyond the lifecycle of the Pod.
+
+Example:
+```yaml
+volumes:
+  - name: my-pvc-volume
+    persistentVolumeClaim:
+      claimName: my-pvc
+```
+</details>
+
+<details>
+<summary><b>4. configMap</b></summary>
+
+- **Purpose**: Mounts configuration data from a `ConfigMap` into the Pod.
+- **Use Case**: Inject configuration settings or files into containers.
+- **Lifecycle**: Data is managed externally in the `ConfigMap`.
+
+Example:
+```yaml
+volumes:
+  - name: config-volume
+    configMap:
+      name: my-config
+```
+</details>
+
+<details>
+<summary><b>5. secret</b></summary>
+
+- **Purpose**: Mounts sensitive data like passwords, tokens, or keys stored in a Kubernetes `Secret`.
+- **Use Case**: Securely provide credentials or sensitive data to containers.
+- **Lifecycle**: Managed externally in a `Secret`.
+
+Example:
+```yaml
+volumes:
+  - name: secret-volume
+    secret:
+      secretName: my-secret
+```
+</details>
+
+<details>
+<summary><b>6. nfs</b></summary>
+
+- **Purpose**: Mounts an NFS (Network File System) share.
+- **Use Case**: Sharing data between different Pods or across nodes in a cluster.
+- **Lifecycle**: Managed externally and accessible to any node in the cluster.
+
+Example:
+```yaml
+volumes:
+  - name: nfs-volume
+    nfs:
+      server: nfs-server.example.com
+      path: /data
+```
+</details>
+
+&nbsp;
+
+#### Volume Mounts
+
+Once volumes are defined in a Pod spec, they must be mounted inside the container. Each volume can be mounted to one or more containers in the Pod.
+
+Example:
+```yaml
+containers:
+- name: app-container
+  image: nginx
+  volumeMounts:
+  - mountPath: /usr/share/nginx/html
+    name: cache-volume
+```
+
+In this example:
+- `volumeMounts` specifies where the volume is mounted inside the container.
+- `mountPath` is the path inside the container where the volume will be accessible.
+- `name` references the defined volume (`cache-volume` in this case).
+
+#### Volume Lifecycle
+
+- **Pod Lifetime**: A volume is tied to the lifecycle of a Pod, unless it is backed by an external storage system (e.g., Persistent Volumes, NFS).
+- **Ephemeral or Persistent**: Volumes like `emptyDir` are ephemeral and exist only for the duration of the Pod. Others, like `persistentVolumeClaim`, are backed by persistent storage and can outlive a Pod's lifecycle.
+
+#### Persistent Volumes and Claims
+
+To decouple storage from Pods, Kubernetes uses **Persistent Volumes (PVs)** and **Persistent Volume Claims (PVCs)**:
+- **PersistentVolume (PV)**: A cluster-level resource that represents physical storage, such as cloud storage, NFS, or a local disk.
+- **PersistentVolumeClaim (PVC)**: A request for storage made by a Pod. The PVC binds to a PV that matches the requested storage requirements.
+
+##### Example of Persistent Volume and Persistent Volume Claim
+
+**PersistentVolume (PV):**
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  nfs:
+    server: nfs-server.example.com
+    path: /data
+```
+
+**PersistentVolumeClaim (PVC):**
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+```
+> [!NOTE]
+> The **PersistentVolume (PV)** provides 10Gi of storage.
+> The **PersistentVolumeClaim (PVC)** requests 5Gi of storage and will bind to an appropriate PV (such as `my-pv`).
+
+&nbsp;
+
+#### Access Modes
+
+Different types of volumes support different access modes, specifying how volumes can be mounted:
+- **ReadWriteOnce (RWO)**: The volume can be mounted as read-write by a single node.
+- **ReadOnlyMany (ROX)**: The volume can be mounted as read-only by many nodes.
+- **ReadWriteMany (RWX)**: The volume can be mounted as read-write by many nodes.
+
+Summarized example: in **data-tier** deployment:
+
+<img src="https://i.postimg.cc/jjQwt9NR/image.png">
+
+```yaml
+xxx
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: data-tier-volume
+spec:
+  capacity:
+    storage: 1Gi # 1 gibibyte
+  accessModes:
+    - ReadWriteOnce
+  awsElasticBlockStore: 
+    volumeID: INSERT_VOLUME_ID # replace with actual ID
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-tier-volume-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 128Mi # 128 mebibytes 
+---
+apiVersion: apps/v1 # apps API group
+kind: Deployment
+metadata:
+  name: data-tier
+  labels:
+    app: microservices
+    tier: data
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tier: data
+  template:
+    metadata:
+      labels:
+        app: microservices
+        tier: data
+    spec: # Pod spec
+      containers:
+      - name: redis
+        image: redis:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 6379
+            name: redis
+        livenessProbe:
+          tcpSocket:
+            port: redis # named port
+          initialDelaySeconds: 15
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+        volumeMounts:
+          - mountPath: /data
+            name: data-tier-volume
+      volumes:
+      - name: data-tier-volume
+        persistentVolumeClaim:
+          claimName: data-tier-volume-claim
+```
+
+---
+
+### ConfigMap and Secrets
+
+In Kubernetes, **ConfigMaps** and **Secrets** are used to manage configuration data and sensitive information, respectively. They allow you to decouple configuration artifacts from container images, providing flexibility in how your applications are configured.
+
+
+#### ConfigMaps and Secrets
+
+* **Separate configuration from Pod specs:** Results in easier to manage and more portable manifests.
+* **Both are similar but Secrets are specifically for sensitive data:** There are specialized types of Secrets for storing Docker registry credentials and TLS certificates.
+* **We will focus on the generic Secrets.**
+
+#### Using ConfigMaps and Secrets
+
+- Data stored in key-value pairs.**
+- Pods must reference ConfigMaps or Secrets to use their data.**
+- References can be made by mounting Volumes or setting environment variables.
+
+**ConfigMap Example:**
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-configmap
+data:
+  my-key: my-value
+```
+
+**Secrets Example:**
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret
+type: Opaque
+data:
+  my-secret-key: base64encodedvalue
+```
+
+**Pod Manifest Example:**
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+spec:
+  containers:
+  - name: my-app
+    env:
+    - name: MY_CONFIG_VALUE
+      valueFrom:
+        configMapKeyRef:
+          name: my-configmap
+          key: my-key
+    - name: MY_SECRET_VALUE
+      valueFrom:
+        secretKeyRef:
+          name: my-secret
+          key: my-secret-key
+```
+
+---
+
+### Kubernetes Ecosystem
+
+You'll find below a set of useful tools that compatible with Kubernetes.
+
+<details>
+<summary><b>Helm:</b> The Package Manager for Kubernetes</summary>
+
+**What is Helm?**
+
+* A tool for packaging and deploying Kubernetes applications.
+* Manages a collection of Kubernetes resources as a single unit.
+* Simplifies the process of installing, upgrading, and managing complex applications.
+
+**Key Components:**
+
+* **Charts:** Templates that define a set of Kubernetes resources.
+* **Helm Client:** Interacts with the Helm server to manage charts.
+* **Tiller:** A server-side component that deploys charts to Kubernetes.
+
+**Benefits of Using Helm:**
+
+* **Simplified Deployment:** Packages complex applications into a single unit.
+* **Version Control:** Tracks changes to charts and their dependencies.
+* **Reusable Components:** Creates reusable building blocks for applications.
+* **Community-Driven:** Benefits from a large and active community.
+
+**Basic Helm Commands:**
+
+* **helm init:** Initializes Helm and installs Tiller.
+* **helm search:** Searches for charts in the official Helm repository.
+* **helm repo add:** Adds a custom chart repository.
+* **helm install:** Installs a chart to Kubernetes.
+* **helm upgrade:** Upgrades an existing chart.
+* **helm delete:** Deletes an installed chart.
+
+**Example:**
+
+```bash
+helm repo add stable https://charts.helm.sh/stable
+helm install my-nginx stable/nginx
+```
+> [!NOTE]
+> This command installs the Nginx chart from the stable repository with the name "my-nginx".
+
+**Additional Features:**
+
+- **Values Files:** Customize chart values during installation.
+- **Hooks:** Execute scripts before or after chart installation.
+- **Plugins:** Extend Helm's functionality with custom plugins.
+
+Helm is a powerful tool for managing Kubernetes applications. It simplifies the deployment and management of complex applications, making Kubernetes more accessible to developers and operations teams.
+</details>
+
+<details>
+<summary><b>Kustomize:</b> A Tool for Customizing Kubernetes Manifests</summary>
+
+**What is Kustomize?**
+
+- A tool for customizing Kubernetes YAML manifests.
+- Helps manage the complexity of your applications.
+- Works by using a `kustomization.yaml` file that declares customization rules.
+- Original manifests remain untouched and usable.
+
+**Key Features:**
+
+- **Generating ConfigMaps and Secrets from files:** Creates ConfigMaps and Secrets based on the contents of files.
+- **Configuring common fields across multiple resources:** Sets common labels, annotations, or other fields for multiple resources.
+- **Applying patches to any field in a manifest:** Modifies specific fields in a manifest without directly editing the original file.
+- **Using overlays to customize base groups of resources:** Creates overlays to customize specific parts of a base set of resources.
+
+**Using Kustomize:**
+
+- Kustomize is directly integrated with `kubectl`.
+- Include the `--kustomize` or `-k` option to `kubectl create` or `kubectl apply` commands.
+
+**Example:**
+
+```yaml
+# kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- deployment.yaml
+- service.yaml
+patchesStrategicMerge:
+- patch.yaml
+configMapGenerator:
+- name: my-configmap
+  envVarPrefix: MY_CONFIG
+  literals:
+  - MY_VAR=my-value
+```
+
+This `kustomization.yaml` file:
+
+- Specifies the base resources (deployment.yaml and service.yaml).
+- Applies a strategic merge patch from patch.yaml.
+- Generates a ConfigMap named "my-configmap" with an environment variable prefix "MY_CONFIG" and a literal value "MY_VAR=my-value".
+
+By running `kubectl apply -k .`, Kustomize will apply the customized resources to your Kubernetes cluster.
+
+Kustomize is a valuable tool for managing and customizing Kubernetes applications, especially when dealing with complex deployments or requiring frequent changes.
+</details>
+
+<details>
+<summary><b>Prometheus:</b> A Monitoring and Alerting System</summary>
+
+**What is Prometheus?**
+
+- An open-source monitoring and alerting system.
+- A server for pulling in and storing time series metric data.
+- Inspired by an internal monitoring tool at Google called borgmon.
+- De facto standard solution for monitoring Kubernetes.
+
+**Prometheus + Kubernetes:**
+
+- Kubernetes components supply all their own metrics in PromQL format.
+- Many more metrics than Metrics Server.
+- Adapter available to autoscale using metrics in Prometheus rather than CPU utilization.
+- Commonly paired with Grafana for visualizations.
+- Define alert rules and send notifications.
+- Easily installed via Helm chart.
+
+**Key Points:**
+
+- Prometheus is a powerful tool for monitoring Kubernetes applications.
+- It provides a rich set of metrics and alerting capabilities.
+- It integrates seamlessly with Kubernetes components.
+- It's often used in conjunction with Grafana for visualization and alerting.
+
+</details>
+
+<details>
+<summary><b>Kubeflow:</b> A Machine Learning Platform</summary>
+
+**What is Kubeflow?**
+
+- A platform for deploying machine learning workflows on Kubernetes.
+- Simplifies the process of building, training, and serving machine learning models.
+- Provides a complete machine learning stack.
+- Leverages Kubernetes for deployment, scaling, and portability.
+
+**Key Features:**
+
+- **Machine Learning Pipelines:** Defines and executes machine learning workflows.
+- **TensorFlow Integration:** Seamlessly integrates with TensorFlow for model training and serving.
+- **Distributed Training:** Scales machine learning models across multiple nodes.
+- **Model Serving:** Deploys trained models as REST APIs or gRPC services.
+- **Experiment Tracking:** Tracks and compares different machine learning experiments.
+
+**Benefits of Using Kubeflow:**
+
+- **Simplified Deployment:** Manages the complexity of deploying machine learning pipelines.
+- **Scalability:** Automatically scales resources based on workload.
+- **Portability:** Deploys machine learning models on any Kubernetes cluster.
+- **Integration:** Provides a comprehensive set of tools and integrations.
+
+Kubeflow is a valuable tool for data scientists and machine learning engineers who want to leverage Kubernetes to build and deploy scalable machine learning applications.
+
+</details>
+
+<details>
+<summary><b>Knative:</b> A Platform for Serverless Workloads</summary>
+
+**What is Knative?**
+
+* A platform for building, deploying, and managing serverless workloads on Kubernetes.
+* Provides a consistent and portable way to run serverless applications.
+* Can be deployed anywhere with Kubernetes, avoiding vendor lock-in.
+* Supported by Google, IBM, and SAP.
+
+**Key Features:**
+
+* **Serverless Functions:** Create and deploy event-driven functions without managing infrastructure.
+* **Custom Runtimes:** Use your preferred programming language or framework.
+* **Horizontal Autoscaling:** Automatically scales resources based on demand.
+* **Service Binding:** Connect services to event sources and triggers.
+
+**Benefits of Using Knative:**
+
+* **Simplified Development:** Focus on writing code without worrying about infrastructure.
+* **Scalability:** Automatically scales to handle varying workloads.
+* **Portability:** Deploy applications on any Kubernetes environment.
+* **Community Support:** Backed by a strong community and industry leaders.
+
+Knative is a powerful tool for building and deploying serverless applications on Kubernetes. It provides a flexible and scalable platform for modern application development.
+
+</details>
