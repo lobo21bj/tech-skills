@@ -9,3 +9,4 @@ Repo dedicated for the learning journeys I've nade on the following programming 
 - [React / React Native](#React-Native-w-Expo)
 - [Python](#Python)
 - [Kubernetes](#K8s)
+- [SQL](#SQL)
