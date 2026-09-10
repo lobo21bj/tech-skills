@@ -1,9 +1,11 @@
 # Certified Kubernetes Application Developer Prep
+
 <p align="center">
 <img src="https://images.credly.com/images/cc8adc83-1dc6-4d57-8e20-22171247e052/blob" width=300 >
 </p>
 
 ## Architecture
+
 **Nodes** are the machines in the cluster.
 Nodes are categorized as **workers** or **masters**.
 
@@ -13,7 +15,7 @@ Nodes are categorized as **workers** or **masters**.
 
 The **control plane** is a set of APIs and software that Kubernetes users interact with.
 
-The APIs and software are referred to as **master components**. 
+The APIs and software are referred to as **master components**.
 
 ----
 
@@ -24,6 +26,7 @@ The APIs and software are referred to as **master components**.
 
 * **Direct interaction:** While possible, it's not common.
 * **Necessity:** May be required if there's no Kubernetes client library for your programming language.
+
 </details>
 
 <details>
@@ -32,6 +35,7 @@ The APIs and software are referred to as **master components**.
 * **Abstraction:** Handles authentication, managing individual REST API requests and responses.
 * **Official libraries:** Kubernetes maintains official client libraries for various programming languages.
 * **Community-maintained libraries:** Available for languages without official libraries.
+
 </details>
 
 <details>
@@ -46,6 +50,7 @@ The APIs and software are referred to as **master components**.
   * Get: List the existing resources.
   * Describe: Detailed info of a resource.
   * Logs: See the log of each resource.
+
 </details>
 
 <details>
@@ -53,6 +58,7 @@ The APIs and software are referred to as **master components**.
 
 * **Graphical user interface:** Provides a visual way to interact with Kubernetes resources.
 * **Accessibility:** User-friendly for those who prefer a visual interface.
+
 </details>
 
 ---
@@ -104,13 +110,16 @@ If the requirements are met the QoS Class will be Guaranteed when you describe t
 #### Getting the status of the Pod
 
 Get the status of your pods with aditional information
+
 ```sh
 kubectl get pods -o wide
 ```
+
 >Sample output
 <img src="https://cdn.prod.website-files.com/64b7506ad75bbfcf43a51e90/65411cc00707e2a0ae8a2a2d_E2yi_WHKRBViatddnxALPIXAGNDAQ3i_EuOooW9xklKNQAkPlfs-Pr0WfMYUjcNii6Q-IQPUTkr8xp-zwkRMFLq9lMz51pNuuANZzc3veuxA5SyodL0t3LSYw-VsU3HhogHo4L1LHcsXJVwaoWa3_f4.png">
 
 References:
+
 * **Two Pods:** There are two Pods running in the cluster.
 * **Name:** The name of each Pod is `nginx-deployment-cbdccf466-4h7dv` and `nginx-deployment-cbdccf466-c8wlb`.
 * **Ready:** Both Pods are ready, meaning they are running and accepting connections.
@@ -123,9 +132,10 @@ References:
 * **READINESS GATES:** Both Pods have no readiness gates defined, meaning they are considered ready as soon as their containers are running.
 
 ----
+
 ### Services
 
-* **Defines networking rules:** 
+* **Defines networking rules:**
   * For accessing Pods in the cluster
   * And from the internet
 
@@ -141,7 +151,8 @@ References:
 
 &nbsp;
 
-**Example of manifest file for creation:** 
+**Example of manifest file for creation:**
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -156,15 +167,18 @@ spec:
     app: webserver
   type: NodePort
 ```
+
 &nbsp;
 Get the status of your services
+
 ```sh
 kubectl get service
 ```
+
 >Sample output
 <img src="https://i.postimg.cc/5tVxRcrn/kubectl-services.jpg">
 
-* kubernetes is the 
+* kubernetes is the
 * **NAME:** is the service unique name.
 * **TYPE:** Service type.
 * **CLUSTER-IP:** Would be the private IP address.
@@ -177,6 +191,7 @@ Get more full description of your service
 ```sh
 kubectl describe service webserver
 ```
+
 >Sample Output
 <img src="https://i.postimg.cc/4y7k3wMY/image.png">
 When Endpoints will list each Pod IP of the selected group (selector: app=webserver) along with the container port.
@@ -188,18 +203,22 @@ Another example of ClusterIP service implementation
 
 Try it out:
 Get the IP of the node
+
 ```sh
 kubectl describe nodes | grep -i address -A 1
 ```
+
 >Output
 <img src="https://i.postimg.cc/5N51QKyz/image.png">
 
 Test the webserver by running below command
+
 ```sh
 curl 192.168.64.2:32337
 ```
 
 #### Types
+
 | Characteristic | ClusterIP | NodePort | LoadBalancer | ExternalName | Headless | Accessibility | Use case |
 |---|---|---|---|---|---|---|---|
 | Interface with external service discovery systems | Yes | Yes | Yes | Yes | Yes | External | Advanced custom networking that avoids automatic Kubernetes proxying |
@@ -232,16 +251,19 @@ Refers to multiple containers within the same pod.
 &nbsp;
 
 #### Namespace
+
 - Separate resources according to users, environments or applications.
-- Role based access control (RBAC) to secure access per Namespace.
-- Using Namespaces is a best practice.
+* Role based access control (RBAC) to secure access per Namespace.
+* Using Namespaces is a best practice.
 
 It can be created with below command
+
 ```sh
 kubectl create -f 3.1-namespace.yaml
 ```
 
 where 3.1-namespace.yaml contents is:
+
 ```yaml
 apiVersion: v1
 kind: Namespace
@@ -250,13 +272,17 @@ metadata:
   labels:
     app: counter
 ```
+
 &nbsp;
 
 The multi-container Pod is created with this command. It's associated to aforementioned namespace.
+
 ```sh
 kubectl create -f 3.2-multi_container.yaml -n microservice
 ```
+
 And the yaml content is
+
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -290,28 +316,35 @@ spec:
         - name: API_URL
           value: http://localhost:8080
 ```
+
 > [!NOTE]
 > Redis is an open source data structure server. It belongs to the class of NoSQL databases known as key/value stores.
 
 &nbsp;
 
 Command to check event logs related to pod **app** in **microservice** namespace
+
 ```sh
 kubectl describe -n microservice pod app
 ```
+
 <img src="https://i.postimg.cc/jdzGJm8b/image.png">
 &nbsp;
 
 To check the logs associated to each container
+
 ```sh
 kubectl logs -n microservice app counter --tail 10       # last 10 lines of counter container
 ```
+
 ```sh
 kubectl logs -n microservice app poller -f               # interactive of poller container
 ```
+
 ---
 
 ### Service Discovery
+
 &nbsp;
 
 **What are Kubernetes Services?**
@@ -331,10 +364,12 @@ In a Kubernetes cluster, Services act as a layer of abstraction between pods and
 Kubernetes offers two primary mechanisms for service discovery:
 
 #### Environment Variables
+
 * **Automatic injection:** Services automatically inject their IP address and port into containers as environment variables.
 * **Naming conventions:** Environment variables follow specific naming conventions based on the service name, making it easy for applications to access them.
 
 #### DNS
+
 * **Automatic creation:** Kubernetes creates DNS records for Services in the cluster's DNS.
 * **Container configuration:** Containers are automatically configured to use the cluster's DNS, allowing them to resolve service names to IP addresses.
 
@@ -344,20 +379,22 @@ Kubernetes offers two primary mechanisms for service discovery:
 &nbsp;
 
 **Key Points**
+
 * Services are essential for building scalable and resilient applications in Kubernetes.
 * They provide a stable network endpoint for a set of pods.
 * Services use environment variables and DNS for service discovery.
 * Understanding Services is crucial for effective Kubernetes development and operations.
 
-
 **Creating the tiers**
 
 We can create multiple resources in one unique manifest yaml file by separating them with "---"
+
 ```sh
 kubectl create -f 4.2-data_tier.yaml -n service-discovery
 ```
 
 4.2-data_tier.yaml content
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -389,22 +426,27 @@ spec:
       ports:
         - containerPort: 6379
 ```
+
 &nbsp;
 
 To describe the newly created tier
+
 ```sh
 kubectl describe -n service-discovery service data-tier
 ```
+
 > It has a public IP and it points to pod endpoint.
 <img src="https://i.postimg.cc/vT1xN5Nr/image.png">
 &nbsp;
 
 Moving on lets create the app tier
+
 ```sh
 kubectl create -f 4.3-app_tier.yaml -n service-discovery
 ```
 
 4.3-app_tier.yaml content
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -444,17 +486,21 @@ spec:
 ```
 
 The app gets the host and port of data tier via environment variables
+
 ```
 $(DATA_TIER_SERVICE_HOST) & $(DATA_TIER_SERVICE_PORT_REDIS)
 ```
+
 &nbsp;
 
 Creating the support tier
+
 ```sh
 kubectl create -f 4.4-support_tier.yaml -n service-discovery
 ```
 
 4.4-support_tier.yaml content
+
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -483,13 +529,16 @@ spec:
           # omit namespace to only search in the same namespace
           value: http://app-tier:$(APP_TIER_SERVICE_PORT)
 ```
+
 > It uses DNS. If it will be used in the same namespace only, you can ommit the service-discovery.
 &nbsp;
 
 **Final state**
+
 ```sh
 kubectl get pods -n service-discovery
 ```
+
 <img src="https://i.postimg.cc/tRLzHgNq/image.png">
 
 &nbsp;
@@ -499,6 +548,7 @@ App is up and running...
 ```sh
 kubectl logs -n service-discovery support-tier poller -f
 ```
+
 <img src="https://i.postimg.cc/R0V7TJ4R/image.png">
 &nbsp;
 
@@ -509,17 +559,16 @@ kubectl logs -n service-discovery support-tier poller -f
 >each port can have a name defined for easier configuration
 <img src="https://i.postimg.cc/vB9BYWpY/image.png">
 
-
 ---
 
 ### Deployments
 
 **Deployment** is a template to create Pods. It's used to create replicas, which are copies of a pod.
-The **Deployment Controller** is a master component responsible for converging the actual state of the system to the desired state. 
+The **Deployment Controller** is a master component responsible for converging the actual state of the system to the desired state.
 
-- **Replicas:** A Deployment manages multiple instances (replicas) of a Pod.
-- **Desired State:** It defines the target configuration for the application.
-- **Deployment Controller:** Ensures that the actual state aligns with the desired state.
+* **Replicas:** A Deployment manages multiple instances (replicas) of a Pod.
+* **Desired State:** It defines the target configuration for the application.
+* **Deployment Controller:** Ensures that the actual state aligns with the desired state.
 
 **Example:**
 
@@ -542,6 +591,7 @@ spec:
       - name: my-app
         image: my-image:latest
 ```
+
 > [!NOTE]
 > This deployment creates 3 replicas of a Pöd with the label "app=my-app"
 
@@ -553,9 +603,11 @@ spec:
 &nbsp;
 
 The deployment is app and running:
+
 ```sh
 kubectl get -n deployments deployments
 ```
+
 <img src="https://i.postimg.cc/2S4kq4G3/image.png">
 
 &nbsp;
@@ -563,11 +615,13 @@ kubectl get -n deployments deployments
 ```sh
 kubectl get -n deployments pods
 ```
+
 <img src="https://i.postimg.cc/7LwxSft9/image.png">
 
 &nbsp;
 
 If we want to apply horizontal scalling and scale up the app-tier & support-tier deployment to 5 replicas:
+
 ```sh
 kubectl scale -n deployments deployments app-tier support-tier --replicas=5
 ```
@@ -592,16 +646,16 @@ kubectl describe -n deployments service app-tier
 
 **Key features:**
 
-- **Automatic Scaling:** Adjusts the number of replicas to match demand.
-- **CPU Utilization:** Scales based on the percentage of CPU used by the Pods.
-- **Custom Metrics:** Can use other metrics like memory usage, network traffic, or application-specific data.
-- **Target CPU:** Defines the desired CPU utilization level.
-- **Min/Max Replicas:** Sets limits on the minimum and maximum number of replicas.
+* **Automatic Scaling:** Adjusts the number of replicas to match demand.
+* **CPU Utilization:** Scales based on the percentage of CPU used by the Pods.
+* **Custom Metrics:** Can use other metrics like memory usage, network traffic, or application-specific data.
+* **Target CPU:** Defines the desired CPU utilization level.
+* **Min/Max Replicas:** Sets limits on the minimum and maximum number of replicas.
 
 In order to use autoscalling **Metrics** are required.
-- Autoscalling depends on metrics being collected.
-- **Metrics Server** is one solution for collecting metrics.
-- Several manifest files are used to deploy **Metrics Server** ([Repos]([Metrics](https://github.com/kubernets-sigs/metrics-server)))
+* Autoscalling depends on metrics being collected.
+* **Metrics Server** is one solution for collecting metrics.
+* Several manifest files are used to deploy **Metrics Server** ([Repos]([Metrics](https://github.com/kubernets-sigs/metrics-server)))
 
 To install **Metrics Server**:
 
@@ -616,6 +670,7 @@ Once deployed we see the status of the running pods
 ```sh
 kubectl top pods -n deployments
 ```
+
 <img src="https://i.postimg.cc/66rxf9R1/image.png">
 
 &nbsp;
@@ -676,18 +731,22 @@ spec:
 ```sh
 kubectl create -f 6.1-app_tier_cpu_request.yaml -n deployments
 ```
+
 > ![CUATION]
 > Fails cause the resources already exists
 
 ```sh
 kubectl apply -f 6.1-app_tier_cpu_request.yaml -n deployments
 ```
+
 <img src="https://i.postimg.cc/BbsyVKD7/image.png">
 
 &nbsp;
 
 #### HorizontalPodAutoscaler component
+
 6.2-autoscale.yaml content:
+
 ```yaml
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
@@ -725,17 +784,21 @@ kubectl api-resources
 we see that *hpa* is the alias of HorizontalPodAutoscaler resource.
 
 To see full desciption of the resource including a list of events
+
 ```sh
 kubectl describe -n deployments hpa
 ```
+
 <img src="https://i.postimg.cc/wxVbB3DH/image.png">
 
 &nbsp;
 
 To see the actual status of the hpa
+
 ```sh
 kubectl get -n deployments hpa
 ```
+
 <img src="https://i.postimg.cc/xT1pNYPm/image.png">
 
 &nbsp;
@@ -752,19 +815,18 @@ kubectl edit -n deployments hpa
 
 Kubernetes provides multiple deployment strategies for managing updates to applications. The goal is to update applications with minimal downtime or disruptions. Below are the four common deployment strategies supported in Kubernetes.
 
-
-
-
 <details>
 <summary><b>1. RollingUpdate (Default)</b> </summary>
 
 The default deployment strategy for Kubernetes Deployments. It allows you to incrementally replace old pods with new ones while maintaining the application’s availability.
 
-##### Key Parameters:
-- **maxUnavailable**: Maximum number of pods that can be unavailable during the update. Default is 25%.
-- **maxSurge**: Maximum number of extra pods that can be created during the update. Default is 25%.
+##### Key Parameters
 
-##### Example:
+- **maxUnavailable**: Maximum number of pods that can be unavailable during the update. Default is 25%.
+* **maxSurge**: Maximum number of extra pods that can be created during the update. Default is 25%.
+
+##### Example
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -784,12 +846,15 @@ spec:
           image: my-app:2.0
 ```
 
-##### Benefits:
-- Ensures application availability during updates.
-- Gradual rollout allows monitoring for issues.
+##### Benefits
 
-##### Drawbacks:
+- Ensures application availability during updates.
+* Gradual rollout allows monitoring for issues.
+
+##### Drawbacks
+
 - May take longer depending on the number of replicas and settings of `maxUnavailable` and `maxSurge`.
+
 </details>
 
 <details>
@@ -797,7 +862,8 @@ spec:
 
 In the `Recreate` strategy, all old pods are terminated before new pods are created. This means there will be downtime during the deployment process.
 
-##### Example:
+##### Example
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -814,11 +880,14 @@ spec:
           image: my-app:2.0
 ```
 
-#### Benefits:
+#### Benefits
+
 - Ensures that only the new version is running, with no overlap between versions.
 
-#### Drawbacks:
+#### Drawbacks
+
 - Downtime is guaranteed while the old pods are terminated and new ones are spun up.
+
 </details>
 
 <details>
@@ -826,12 +895,14 @@ spec:
 
 In a Blue-Green deployment, two environments (blue and green) are maintained. The "blue" environment runs the current version, and the "green" environment is the new version. Once the new version is verified, traffic is switched to the "green" environment.
 
-##### Steps:
+##### Steps
+
 1. Deploy the new version to the green environment (without impacting blue).
 2. Once verified, switch traffic to the green environment.
 3. Optionally, keep the blue environment as a backup until confident.
 
-##### Example (simplified workflow):
+##### Example (simplified workflow)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -846,13 +917,16 @@ spec:
           image: my-app:2.0
 ```
 
-##### Benefits:
-- Zero downtime during the switch.
-- Quick rollback by switching traffic back to the blue environment.
+##### Benefits
 
-##### Drawbacks:
+- Zero downtime during the switch.
+* Quick rollback by switching traffic back to the blue environment.
+
+##### Drawbacks
+
 - Requires double the resources (both environments running simultaneously).
-- Switching traffic can introduce complexity.
+* Switching traffic can introduce complexity.
+
 </details>
 
 <details>
@@ -860,12 +934,14 @@ spec:
 
 Canary deployments involve releasing the new version to a small subset of users first (a "canary" group). Based on feedback and performance, the new version is gradually rolled out to the rest of the users.
 
-##### Steps:
+##### Steps
+
 1. Deploy the new version to a small percentage of the user base.
 2. Monitor the new version for issues.
 3. Gradually increase the percentage of users directed to the new version until 100%.
 
-##### Example (simplified workflow):
+##### Example (simplified workflow)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -884,16 +960,20 @@ spec:
         - name: my-app-container
           image: my-app:2.0
 ```
+
 > [!NOTE]
 > In this example, the new canary version could start with 10% of the traffic and gradually increase.
 
-#### Benefits:
-- Safer and incremental rollout, allowing testing with a subset of users.
-- Easier to catch issues early before a full rollout.
+#### Benefits
 
-#### Drawbacks:
+- Safer and incremental rollout, allowing testing with a subset of users.
+* Easier to catch issues early before a full rollout.
+
+#### Drawbacks
+
 - Slightly more complex to configure and monitor.
-- Requires constant monitoring during the gradual rollout.
+* Requires constant monitoring during the gradual rollout.
+
 </details>
 
 &nbsp;
@@ -902,10 +982,10 @@ spec:
 
 When choosing a deployment strategy in Kubernetes, consider your application's availability requirements and resource constraints. Here's a quick summary:
 
-- **RollingUpdate**: Default and gradual rollout. Ideal for applications requiring high availability.
-- **Recreate**: Full downtime but simple. Suitable for non-critical applications.
-- **Blue-Green**: Zero downtime but resource-intensive. Best for large-scale, mission-critical applications.
-- **Canary**: Safe, incremental rollout. Suitable for applications where testing with a subset of users is beneficial.
+* **RollingUpdate**: Default and gradual rollout. Ideal for applications requiring high availability.
+* **Recreate**: Full downtime but simple. Suitable for non-critical applications.
+* **Blue-Green**: Zero downtime but resource-intensive. Best for large-scale, mission-critical applications.
+* **Canary**: Safe, incremental rollout. Suitable for applications where testing with a subset of users is beneficial.
 
 ---
 
@@ -916,17 +996,17 @@ Kubernetes provides mechanisms to check the health and status of containers runn
 ##### Types of Probes
 
 1. **Liveness Probe**:
-    - Checks if the application running in the container is still alive.
-    - If the liveness probe fails, the container is killed and restarted according to the `restartPolicy`.
+    * Checks if the application running in the container is still alive.
+    * If the liveness probe fails, the container is killed and restarted according to the `restartPolicy`.
   
 2. **Readiness Probe**:
-    - Checks if the application is ready to start serving traffic.
-    - If the readiness probe fails, the Pod is temporarily removed from the Service’s load balancer, but the container is not restarted.
+    * Checks if the application is ready to start serving traffic.
+    * If the readiness probe fails, the Pod is temporarily removed from the Service’s load balancer, but the container is not restarted.
   
 3. **Startup Probe**:
-    - Checks whether the application within a container has started.
-    - Useful for slow-starting containers.
-    - After the startup probe succeeds, Kubernetes switches to using the liveness probe.
+    * Checks whether the application within a container has started.
+    * Useful for slow-starting containers.
+    * After the startup probe succeeds, Kubernetes switches to using the liveness probe.
 
 &nbsp;
 
@@ -935,7 +1015,7 @@ Kubernetes provides mechanisms to check the health and status of containers runn
 Kubernetes provides three types of mechanisms to perform probes:
 
 1. **HTTP Probe**:
-    - Kubernetes sends an HTTP GET request to the container. If the response has a status code greater than or equal to 200 and less than 400, the probe is considered successful.
+    * Kubernetes sends an HTTP GET request to the container. If the response has a status code greater than or equal to 200 and less than 400, the probe is considered successful.
 
     ```yaml
     livenessProbe:
@@ -947,7 +1027,7 @@ Kubernetes provides three types of mechanisms to perform probes:
     ```
 
 2. **TCP Socket Probe**:
-    - Kubernetes tries to establish a TCP connection on the specified port of the container. If the connection can be established, the probe is considered successful.
+    * Kubernetes tries to establish a TCP connection on the specified port of the container. If the connection can be established, the probe is considered successful.
 
     ```yaml
     livenessProbe:
@@ -958,7 +1038,7 @@ Kubernetes provides three types of mechanisms to perform probes:
     ```
 
 3. **Exec Probe**:
-    - Kubernetes executes a command inside the container. If the command exits with a status code of 0, the probe is successful.
+    * Kubernetes executes a command inside the container. If the command exits with a status code of 0, the probe is successful.
 
     ```yaml
     livenessProbe:
@@ -972,14 +1052,16 @@ Kubernetes provides three types of mechanisms to perform probes:
 
 #### Key Probe Parameters
 
-- `initialDelaySeconds`: The number of seconds after the container starts before the first probe is initiated.
-- `periodSeconds`: How often (in seconds) to perform the probe.
-- `timeoutSeconds`: Number of seconds after which the probe times out if no response is received.
-- `failureThreshold`: When a probe fails, Kubernetes will try `failureThreshold` times before considering the container to have failed.
-- `successThreshold`: Minimum consecutive successes for the probe to be considered successful after it fails.
+* `initialDelaySeconds`: The number of seconds after the container starts before the first probe is initiated.
+* `periodSeconds`: How often (in seconds) to perform the probe.
+* `timeoutSeconds`: Number of seconds after which the probe times out if no response is received.
+* `failureThreshold`: When a probe fails, Kubernetes will try `failureThreshold` times before considering the container to have failed.
+* `successThreshold`: Minimum consecutive successes for the probe to be considered successful after it fails.
 
-#### Example 
+#### Example
+
 data-tier deployment
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -1032,9 +1114,11 @@ spec:
             - ping
           initialDelaySeconds: 5
 ```
+
 &nbsp;
 
 app-tier deployment
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -1107,6 +1191,7 @@ They run every time a Pod is created and use their own image.
 ##### Usage
 
 Inside app-tier deployment at the containers level
+
 ```yaml
 initContainers:
         - name: await-redis
@@ -1119,6 +1204,7 @@ initContainers:
             - run-script
             - await-redis
 ```
+
 If we check the status of the Pod once is initialized..
 
 ```sh
@@ -1135,9 +1221,9 @@ Kubernetes Volumes provide a way for containers to store and share data beyond t
 
 #### Why Use Volumes?
 
-- **Persistent Data**: Containers' file systems are ephemeral. When a container crashes or restarts, all data inside it is lost. Volumes provide a mechanism to store data that needs to persist.
-- **Data Sharing**: Multiple containers within the same Pod can share the same volume, allowing them to access the same files or directories.
-- **Integration with External Storage**: Volumes can be connected to external storage systems, allowing you to use cloud providers, NFS, or other storage solutions.
+* **Persistent Data**: Containers' file systems are ephemeral. When a container crashes or restarts, all data inside it is lost. Volumes provide a mechanism to store data that needs to persist.
+* **Data Sharing**: Multiple containers within the same Pod can share the same volume, allowing them to access the same files or directories.
+* **Integration with External Storage**: Volumes can be connected to external storage systems, allowing you to use cloud providers, NFS, or other storage solutions.
 
 #### Volume Types
 
@@ -1146,90 +1232,101 @@ Kubernetes supports various types of volumes, each suited to different use cases
 <details>
 <summary><b>1. emptyDir</b></summary>
 
-- **Purpose**: Temporary storage for the lifetime of the Pod.
-- **Use Case**: For data sharing between containers in the same Pod, scratch space, or temporary storage.
-- **Lifecycle**: Data is deleted when the Pod is deleted.
+* **Purpose**: Temporary storage for the lifetime of the Pod.
+* **Use Case**: For data sharing between containers in the same Pod, scratch space, or temporary storage.
+* **Lifecycle**: Data is deleted when the Pod is deleted.
 
 Example:
+
 ```yaml
 volumes:
   - name: cache-volume
     emptyDir: {}
 ```
+
 </details>
 
 <details>
 <summary><b>2. hostPath</b></summary>
 
-- **Purpose**: Mounts a file or directory from the host node's filesystem into the Pod.
-- **Use Case**: Accessing specific files or directories on the host machine.
-- **Security Warning**: Can compromise security since it gives containers access to the host machine's filesystem.
+* **Purpose**: Mounts a file or directory from the host node's filesystem into the Pod.
+* **Use Case**: Accessing specific files or directories on the host machine.
+* **Security Warning**: Can compromise security since it gives containers access to the host machine's filesystem.
 
 Example:
+
 ```yaml
 volumes:
   - name: host-volume
     hostPath:
       path: /data
 ```
+
 </details>
 
 <details>
 <summary><b>3. persistentVolumeClaim (PVC)</b></summary>
 
-- **Purpose**: Claims persistent storage resources.
-- **Use Case**: Allows users to dynamically request storage based on predefined `PersistentVolumes` (PVs) or through a storage class.
-- **Lifecycle**: Data can persist beyond the lifecycle of the Pod.
+* **Purpose**: Claims persistent storage resources.
+* **Use Case**: Allows users to dynamically request storage based on predefined `PersistentVolumes` (PVs) or through a storage class.
+* **Lifecycle**: Data can persist beyond the lifecycle of the Pod.
 
 Example:
+
 ```yaml
 volumes:
   - name: my-pvc-volume
     persistentVolumeClaim:
       claimName: my-pvc
 ```
+
 </details>
 
 <details>
 <summary><b>4. configMap</b></summary>
 
-- **Purpose**: Mounts configuration data from a `ConfigMap` into the Pod.
-- **Use Case**: Inject configuration settings or files into containers.
-- **Lifecycle**: Data is managed externally in the `ConfigMap`.
+* **Purpose**: Mounts configuration data from a `ConfigMap` into the Pod.
+* **Use Case**: Inject configuration settings or files into containers.
+* **Lifecycle**: Data is managed externally in the `ConfigMap`.
 
 Example:
+
 ```yaml
 volumes:
   - name: config-volume
     configMap:
       name: my-config
 ```
+
 </details>
 
 <details>
 <summary><b>5. secret</b></summary>
 
-- **Purpose**: Mounts sensitive data like passwords, tokens, or keys stored in a Kubernetes `Secret`.
-- **Use Case**: Securely provide credentials or sensitive data to containers.
-- **Lifecycle**: Managed externally in a `Secret`.
+* **Purpose**: Mounts sensitive data like passwords, tokens, or keys stored in a Kubernetes `Secret`.
+* **Use Case**: Securely provide credentials or sensitive data to containers.
+* **Lifecycle**: Managed externally in a `Secret`.
 
 Example:
+
 ```yaml
 volumes:
   - name: secret-volume
     secret:
       secretName: my-secret
 ```
+
 </details>
 
 <details>
 <summary><b>6. nfs</b></summary>
 
-- **Purpose**: Mounts an NFS (Network File System) share.
-- **Use Case**: Sharing data between different Pods or across nodes in a cluster.
-- **Lifecycle**: Managed externally and accessible to any node in the cluster.
+* **Purpose**: Mounts an NFS (Network File System) share.
+* **Use Case**: Sharing data between different Pods or across nodes in a cluster.
+* **Lifecycle**: Managed externally and accessible to any node in the cluster.
 
 Example:
+
 ```yaml
 volumes:
   - name: nfs-volume
@@ -1237,6 +1334,7 @@ volumes:
       server: nfs-server.example.com
       path: /data
 ```
+
 </details>
 
 &nbsp;
@@ -1246,6 +1344,7 @@ volumes:
 Once volumes are defined in a Pod spec, they must be mounted inside the container. Each volume can be mounted to one or more containers in the Pod.
 
 Example:
+
 ```yaml
 containers:
 - name: app-container
@@ -1256,24 +1355,25 @@ containers:
 ```
 
 In this example:
-- `volumeMounts` specifies where the volume is mounted inside the container.
-- `mountPath` is the path inside the container where the volume will be accessible.
-- `name` references the defined volume (`cache-volume` in this case).
+* `volumeMounts` specifies where the volume is mounted inside the container.
+* `mountPath` is the path inside the container where the volume will be accessible.
+* `name` references the defined volume (`cache-volume` in this case).
 
 #### Volume Lifecycle
 
-- **Pod Lifetime**: A volume is tied to the lifecycle of a Pod, unless it is backed by an external storage system (e.g., Persistent Volumes, NFS).
-- **Ephemeral or Persistent**: Volumes like `emptyDir` are ephemeral and exist only for the duration of the Pod. Others, like `persistentVolumeClaim`, are backed by persistent storage and can outlive a Pod's lifecycle.
+* **Pod Lifetime**: A volume is tied to the lifecycle of a Pod, unless it is backed by an external storage system (e.g., Persistent Volumes, NFS).
+* **Ephemeral or Persistent**: Volumes like `emptyDir` are ephemeral and exist only for the duration of the Pod. Others, like `persistentVolumeClaim`, are backed by persistent storage and can outlive a Pod's lifecycle.
 
 #### Persistent Volumes and Claims
 
 To decouple storage from Pods, Kubernetes uses **Persistent Volumes (PVs)** and **Persistent Volume Claims (PVCs)**:
-- **PersistentVolume (PV)**: A cluster-level resource that represents physical storage, such as cloud storage, NFS, or a local disk.
-- **PersistentVolumeClaim (PVC)**: A request for storage made by a Pod. The PVC binds to a PV that matches the requested storage requirements.
+* **PersistentVolume (PV)**: A cluster-level resource that represents physical storage, such as cloud storage, NFS, or a local disk.
+* **PersistentVolumeClaim (PVC)**: A request for storage made by a Pod. The PVC binds to a PV that matches the requested storage requirements.
 
 ##### Example of Persistent Volume and Persistent Volume Claim
 
 **PersistentVolume (PV):**
+
 ```yaml
 apiVersion: v1
 kind: PersistentVolume
@@ -1290,6 +1390,7 @@ spec:
 ```
 
 **PersistentVolumeClaim (PVC):**
+
 ```yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -1302,6 +1403,7 @@ spec:
     requests:
       storage: 5Gi
 ```
+
 > [!NOTE]
 > The **PersistentVolume (PV)** provides 10Gi of storage.
 > The **PersistentVolumeClaim (PVC)** requests 5Gi of storage and will bind to an appropriate PV (such as `my-pv`).
@@ -1311,9 +1413,9 @@ spec:
 #### Access Modes
 
 Different types of volumes support different access modes, specifying how volumes can be mounted:
-- **ReadWriteOnce (RWO)**: The volume can be mounted as read-write by a single node.
-- **ReadOnlyMany (ROX)**: The volume can be mounted as read-only by many nodes.
-- **ReadWriteMany (RWX)**: The volume can be mounted as read-write by many nodes.
+* **ReadWriteOnce (RWO)**: The volume can be mounted as read-write by a single node.
+* **ReadOnlyMany (ROX)**: The volume can be mounted as read-only by many nodes.
+* **ReadWriteMany (RWX)**: The volume can be mounted as read-write by many nodes.
 
 Summarized example: in **data-tier** deployment:
 
@@ -1395,7 +1497,6 @@ spec:
 
 In Kubernetes, **ConfigMaps** and **Secrets** are used to manage configuration data and sensitive information, respectively. They allow you to decouple configuration artifacts from container images, providing flexibility in how your applications are configured.
 
-
 #### ConfigMaps and Secrets
 
 * **Separate configuration from Pod specs:** Results in easier to manage and more portable manifests.
@@ -1404,9 +1505,9 @@ In Kubernetes, **ConfigMaps** and **Secrets** are used to manage configuration d
 
 #### Using ConfigMaps and Secrets
 
-- Data stored in key-value pairs.**
-- Pods must reference ConfigMaps or Secrets to use their data.**
-- References can be made by mounting Volumes or setting environment variables.
+* Data stored in key-value pairs.**
+* Pods must reference ConfigMaps or Secrets to use their data.**
+* References can be made by mounting Volumes or setting environment variables.
 
 **ConfigMap Example:**
 
@@ -1497,14 +1598,15 @@ You'll find below a set of useful tools that compatible with Kubernetes.
 helm repo add stable https://charts.helm.sh/stable
 helm install my-nginx stable/nginx
 ```
+
 > [!NOTE]
 > This command installs the Nginx chart from the stable repository with the name "my-nginx".
 
 **Additional Features:**
 
-- **Values Files:** Customize chart values during installation.
-- **Hooks:** Execute scripts before or after chart installation.
-- **Plugins:** Extend Helm's functionality with custom plugins.
+* **Values Files:** Customize chart values during installation.
+* **Hooks:** Execute scripts before or after chart installation.
+* **Plugins:** Extend Helm's functionality with custom plugins.
 
 Helm is a powerful tool for managing Kubernetes applications. It simplifies the deployment and management of complex applications, making Kubernetes more accessible to developers and operations teams.
 </details>
@@ -1514,22 +1616,22 @@ Helm is a powerful tool for managing Kubernetes applications. It simplifies the 
 
 **What is Kustomize?**
 
-- A tool for customizing Kubernetes YAML manifests.
-- Helps manage the complexity of your applications.
-- Works by using a `kustomization.yaml` file that declares customization rules.
-- Original manifests remain untouched and usable.
+* A tool for customizing Kubernetes YAML manifests.
+* Helps manage the complexity of your applications.
+* Works by using a `kustomization.yaml` file that declares customization rules.
+* Original manifests remain untouched and usable.
 
 **Key Features:**
 
-- **Generating ConfigMaps and Secrets from files:** Creates ConfigMaps and Secrets based on the contents of files.
-- **Configuring common fields across multiple resources:** Sets common labels, annotations, or other fields for multiple resources.
-- **Applying patches to any field in a manifest:** Modifies specific fields in a manifest without directly editing the original file.
-- **Using overlays to customize base groups of resources:** Creates overlays to customize specific parts of a base set of resources.
+* **Generating ConfigMaps and Secrets from files:** Creates ConfigMaps and Secrets based on the contents of files.
+* **Configuring common fields across multiple resources:** Sets common labels, annotations, or other fields for multiple resources.
+* **Applying patches to any field in a manifest:** Modifies specific fields in a manifest without directly editing the original file.
+* **Using overlays to customize base groups of resources:** Creates overlays to customize specific parts of a base set of resources.
 
 **Using Kustomize:**
 
-- Kustomize is directly integrated with `kubectl`.
-- Include the `--kustomize` or `-k` option to `kubectl create` or `kubectl apply` commands.
+* Kustomize is directly integrated with `kubectl`.
+* Include the `--kustomize` or `-k` option to `kubectl create` or `kubectl apply` commands.
 
 **Example:**
 
@@ -1551,9 +1653,9 @@ configMapGenerator:
 
 This `kustomization.yaml` file:
 
-- Specifies the base resources (deployment.yaml and service.yaml).
-- Applies a strategic merge patch from patch.yaml.
-- Generates a ConfigMap named "my-configmap" with an environment variable prefix "MY_CONFIG" and a literal value "MY_VAR=my-value".
+* Specifies the base resources (deployment.yaml and service.yaml).
+* Applies a strategic merge patch from patch.yaml.
+* Generates a ConfigMap named "my-configmap" with an environment variable prefix "MY_CONFIG" and a literal value "MY_VAR=my-value".
 
 By running `kubectl apply -k .`, Kustomize will apply the customized resources to your Kubernetes cluster.
 
@@ -1565,26 +1667,26 @@ Kustomize is a valuable tool for managing and customizing Kubernetes application
 
 **What is Prometheus?**
 
-- An open-source monitoring and alerting system.
-- A server for pulling in and storing time series metric data.
-- Inspired by an internal monitoring tool at Google called borgmon.
-- De facto standard solution for monitoring Kubernetes.
+* An open-source monitoring and alerting system.
+* A server for pulling in and storing time series metric data.
+* Inspired by an internal monitoring tool at Google called borgmon.
+* De facto standard solution for monitoring Kubernetes.
 
 **Prometheus + Kubernetes:**
 
-- Kubernetes components supply all their own metrics in PromQL format.
-- Many more metrics than Metrics Server.
-- Adapter available to autoscale using metrics in Prometheus rather than CPU utilization.
-- Commonly paired with Grafana for visualizations.
-- Define alert rules and send notifications.
-- Easily installed via Helm chart.
+* Kubernetes components supply all their own metrics in PromQL format.
+* Many more metrics than Metrics Server.
+* Adapter available to autoscale using metrics in Prometheus rather than CPU utilization.
+* Commonly paired with Grafana for visualizations.
+* Define alert rules and send notifications.
+* Easily installed via Helm chart.
 
 **Key Points:**
 
-- Prometheus is a powerful tool for monitoring Kubernetes applications.
-- It provides a rich set of metrics and alerting capabilities.
-- It integrates seamlessly with Kubernetes components.
-- It's often used in conjunction with Grafana for visualization and alerting.
+* Prometheus is a powerful tool for monitoring Kubernetes applications.
+* It provides a rich set of metrics and alerting capabilities.
+* It integrates seamlessly with Kubernetes components.
+* It's often used in conjunction with Grafana for visualization and alerting.
 
 </details>
 
@@ -1593,25 +1695,25 @@ Kustomize is a valuable tool for managing and customizing Kubernetes application
 
 **What is Kubeflow?**
 
-- A platform for deploying machine learning workflows on Kubernetes.
-- Simplifies the process of building, training, and serving machine learning models.
-- Provides a complete machine learning stack.
-- Leverages Kubernetes for deployment, scaling, and portability.
+* A platform for deploying machine learning workflows on Kubernetes.
+* Simplifies the process of building, training, and serving machine learning models.
+* Provides a complete machine learning stack.
+* Leverages Kubernetes for deployment, scaling, and portability.
 
 **Key Features:**
 
-- **Machine Learning Pipelines:** Defines and executes machine learning workflows.
-- **TensorFlow Integration:** Seamlessly integrates with TensorFlow for model training and serving.
-- **Distributed Training:** Scales machine learning models across multiple nodes.
-- **Model Serving:** Deploys trained models as REST APIs or gRPC services.
-- **Experiment Tracking:** Tracks and compares different machine learning experiments.
+* **Machine Learning Pipelines:** Defines and executes machine learning workflows.
+* **TensorFlow Integration:** Seamlessly integrates with TensorFlow for model training and serving.
+* **Distributed Training:** Scales machine learning models across multiple nodes.
+* **Model Serving:** Deploys trained models as REST APIs or gRPC services.
+* **Experiment Tracking:** Tracks and compares different machine learning experiments.
 
 **Benefits of Using Kubeflow:**
 
-- **Simplified Deployment:** Manages the complexity of deploying machine learning pipelines.
-- **Scalability:** Automatically scales resources based on workload.
-- **Portability:** Deploys machine learning models on any Kubernetes cluster.
-- **Integration:** Provides a comprehensive set of tools and integrations.
+* **Simplified Deployment:** Manages the complexity of deploying machine learning pipelines.
+* **Scalability:** Automatically scales resources based on workload.
+* **Portability:** Deploys machine learning models on any Kubernetes cluster.
+* **Integration:** Provides a comprehensive set of tools and integrations.
 
 Kubeflow is a valuable tool for data scientists and machine learning engineers who want to leverage Kubernetes to build and deploy scalable machine learning applications.
 
