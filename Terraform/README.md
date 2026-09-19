@@ -1865,3 +1865,21 @@ terraform workspace select ProjectA
 ```
 
 Stores the state file in **terraform.tfstate.d** where you will have a new folder for each workspace.
+
+&nbsp;
+
+---
+
+## HCP Terraform
+
+### HCP Terraform Types
+
+- **Remote Mode**: Runs execute on HCP Terraform's disposable virtual machines. Enables advanced features like VCS integration, policy enforcement (Sentinel), and cost estimation.
+- **Local Mode**: Runs execute on your local machine via the CLI. State is stored in HCP Terraform, but remote execution and cloud variable evaluation are disabled.
+- **Agent Mode**: Runs execute on private, on-premises, or isolated infrastructure via lightweight HCP Terraform agents.
+
+### HCP Terraform Workflows
+
+- **VCS-driven workflow**: Es el flujo nativo de GitOps. Conectas el workspace directamente a un repositorio (GitHub, GitLab, etc.). Cada vez que haces un Push o abres un Pull Request, HCP Terraform detecta el cambio automáticamente y lanza el plan o apply.
+- **CLI-driven workflow**: Utiliza tu terminal local con los comandos estándar de Terraform (terraform plan, terraform apply). Al añadir el bloque cloud {} a tu código, la CLI intercepta el comando, sube tus archivos locales a HCP Terraform y ejecuta el proceso de forma remota en la nube de HashiCorp.
+- **API-driven workflow**: Pensado para integraciones avanzadas y automatización total. No se conecta a Git ni requiere que uses la CLI de forma interactiva. Empaqueta el código en un archivo .tar.gz y lo envía programáticamente mediante llamadas REST a la API de HCP Terraform, ideal para pipelines personalizados de CI/CD (como Jenkins o GitLab CI sin integración nativa).
