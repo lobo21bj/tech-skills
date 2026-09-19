@@ -47,7 +47,6 @@ HCL-ish (Terraform Language) supports:
 - Complex Data Structure
   - Maps, Collections
 
-
 ### Infrastructure Lifecycle
 
 **What is infrastructure lifecycle?**
@@ -287,7 +286,7 @@ Define the template
 
 ```hcl
 data "template_file" "user_data" {
-    tempalte = file("../scripts/add-ssh-web-app.yaml")
+    template = file("../scripts/add-ssh-web-app.yaml")
 }
 
 resource "aws_instance "web" {
@@ -856,11 +855,14 @@ terraform apply
 
 ### Variable Definition Precedence
 
-Order | Option
-1 | -var or -var-file (command-line flags)
-2 | Environmental Variablaes
-3 | auto.tfvars
-4 | terraform.tfvars
+| Prioridad | Fuente | Ejemplo |
+| ---: | --- | --- |
+| **1** | `-var` | `terraform plan -var="env=prod"` |
+| **2** | `-var-file` | `terraform plan -var-file="prod.tfvars"` |
+| **3** | `*.auto.tfvars` | `prod.auto.tfvars` |
+| **4** | `terraform.tfvars` | `terraform.tfvars` |
+| **5** | Variables de entorno `TF_VAR_*` | `TF_VAR_env=prod` |
+| **6** | `default` de la variable | `default = "dev"` |
 
 &nbsp;
 
@@ -1098,7 +1100,6 @@ variable "filename" {
 
 - **for_each**: Only works for a map or a set value. Example:
 
-
 main.tf
 
 ```hcl
@@ -1293,7 +1294,7 @@ Requires:
 
 - Unique Bucket Name (DNS Compliant Name)
 - Files size between 0 to 5 TB.
-- Example: "https://all-pets.us-west-1.amazonaws.com"
+- Example: "<https://all-pets.us-west-1.amazonaws.com>"
 - Bucket policy (By default owner only can access it)
 
 [![image.png](https://i.postimg.cc/yxxdKvJp/image.png)](https://postimg.cc/1VxPc0rD)
@@ -1314,7 +1315,7 @@ resource "aws_s3_bucket" "finance" {
 
 resource "aws_s3_bucket_object" "finance-2020" {
     content    = "/root/finance/finance-2020.doc"
-    key        " finance-2020.doc"
+    key        " "finance-2020.doc"
     bucket     = aws_s3_bucket.finance.id
 }
 
@@ -1345,6 +1346,26 @@ resource "aws_s3_bucket_policy" "finance-policy" {
 ```
 
 [![image.png](https://i.postimg.cc/y8pz4shx/image.png)](https://postimg.cc/Xr5P9Mz6)
+
+Another example
+
+```hcl
+resource "aws_iam_user" "cloud" {
+     name = split(":",var.cloud_users)[count.index]
+     count = length(split(":",var.cloud_users))
+  
+}
+resource "aws_s3_bucket" "sonic_media" {
+     bucket = var.bucket
+  
+}
+resource "aws_s3_bucket_object" "upload_sonic_media" {
+     key = substr(each.value, 7, -1)
+     source = each.value
+     for_each = var.media
+     bucket = aws_s3_bucket.sonic_media.id
+}
+```
 
 &nbsp;
 
@@ -1383,3 +1404,464 @@ resource "aws_dynamodb_table_item" "car-items" {
 
 ---
 
+## Remote State
+
+Only one member should operate based on the config used.
+
+[![image.png](https://i.postimg.cc/BQMcSqS6/image.png)](https://postimg.cc/Vd0b4PbQ)
+
+[![image.png](https://i.postimg.cc/MpnRzV37/image.png)](https://postimg.cc/HrCj2cgn)
+
+### Best practice
+
+[![image.png](https://i.postimg.cc/PxQvS4NP/image.png)](https://postimg.cc/TLhPwnV6)
+
+To implment it we should code the main.tf as below:
+
+main.tf
+
+```hcl
+resource "local_file" "pet" {
+    filename = each.value
+    for_each = toset(var.filename)
+}
+
+```
+
+terraform.tf
+
+```hcl
+terraform {
+    backend "s3" {
+        bucket          = "kodekloud-terraform-state-bucket01"
+        key             = "finance/terraform.tfstate"
+        region          = "us-west-1"
+        dynamodb_table  = "state-locking"
+    }
+}
+```
+
+> [!CUATION]
+> terraform init is required to set this up. And delete the local tfstate file. It will we saved in memory from backend storage.
+
+&nbsp;
+
+---
+
+## Terraform State Commnads
+
+```shell
+terraform state <subcommand> aws_s3_bucket.finance
+```
+
+Whereas subcommand could be: list, mv, pull, rm, show
+
+Example of pull remote state lockign.
+
+```shell
+terraform state pull | jq '.resources[] | select (.name == "state-locking-db")|.instances [].attributes.hash_key
+```
+
+*"LockID"*:
+
+With terraform rm resource will be removed from management but not from real world.
+
+&nbsp;
+
+---
+
+## AWS EC2 with Terraform
+
+main.tf
+
+```hcl
+resource "aws_instance" "webserver" {
+    ami             = "ami-0eaeaav214587"
+    instance_type   = "t2.micro"
+    tags = {
+        Name        = "webserver"
+        Description = "An Ngnix WebServer on Ubuntu"
+    }
+    user_data = <<-EOF
+        #!/bin/bash
+        sudo apt update
+        sudo apt install nginx -y
+        systemctl enable nginx
+        systemctl start ngix
+        EOF
+    
+    key_name = aws_key_pair.web.id
+    vpc_security_group_ids = [ aws_security_group.ssh-access.id ]
+}
+
+resource "aws_key_pair" "web" {
+    public_key = file ("/root/.ssh/web.pub")
+}
+
+resource "aws_security_group" "ssh-access" {
+    name        = "ssh-access"
+    description = "Allow SSH access from Internet"
+    ingress {
+        from_port   = 22
+        to_port     = 22
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+output publicip {
+    value   = aws_instance.webserver.public_ip
+}
+```
+
+provider.tf
+
+```hcl
+provider "aws" {
+    region = "us-east-1"
+}
+```
+
+&nbsp;
+
+---
+
+## Terraform Provisioners 2
+
+**remote-exec**:
+
+```hcl
+resource "aws_instance" "webserver" {
+    ami             = "ami-0eaeaav214587"
+    instance_type   = "t2.micro"
+    tags = {
+        Name        = "webserver"
+        Description = "An Ngnix WebServer on Ubuntu"
+    }
+    provisioner "remote-exec" {
+        inline = [  "sudo apt update",
+                    "sudo apt install nginx -y",
+                    "systemctl enable nginx",
+                    "systemctl start ngix",
+                 ]
+    }      
+    
+    key_name = aws_key_pair.web.id
+    vpc_security_group_ids = [ aws_security_group.ssh-access.id ]
+}
+```
+
+&nbsp;
+
+***local-exec** (Creation time provisioner):
+
+```hcl
+resource "aws_instance" "webserver" {
+    ami             = "ami-0eaeaav214587"
+    instance_type   = "t2.micro"
+
+
+    provisioner "local-exec" {
+        command = "echo ${aws_instance.webserver.public_ip} >> /tmp/ips.txt"
+    }
+}
+```
+
+&nbsp;
+
+**Destroy time provisioner**:
+
+```hcl
+resource "aws_instance" "webserver" {
+    ami             = "ami-0eaeaav214587"
+    instance_type   = "t2.micro"
+
+
+    provisioner "local-exec" {
+        command = "echo ${aws_instance.webserver.public_ip} >> /tmp/ips.txt"
+    }
+
+    provisioner "local-exec" {
+        when    = destroy
+        command = "echo ${aws_instance.webserver.public_ip} Destroyed! > /tmp/instance_state.txt"
+    }
+}
+```
+
+**Failure behavior**:
+
+```hcl
+resource "aws_instance" "webserver" {
+    ami             = "ami-0eaeaav214587"
+    instance_type   = "t2.micro"
+
+
+    provisioner "local-exec" {
+        on_failure = continue
+        command = "echo ${aws_instance.webserver.public_ip} > /temp/ips.txt"
+    }
+
+    provisioner "local-exec" {
+        when    = destroy
+        command = "echo ${aws_instance.webserver.public_ip} Destroyed! > /tmp/instance_state.txt"
+    }
+}
+```
+
+&nbsp;
+
+---
+
+## Terraform Taint
+
+When the resource creation fails, terraform marks it as **tainted**.
+It will try to recreate it every time an apply is ran.
+
+```shell
+terraform taint aws_instance.web_server
+```
+
+To mark it for recreation.
+
+```shell
+terraform untaint aws_instance.web_server
+```
+
+&nbsp;
+
+---
+
+## Terraform Debugging
+
+```shell
+export TF_LOG=<log_level>
+export TF_LOG_PATH=/tmp/terraform.log
+```
+
+Log levels:
+
+- INFO
+- WARNING
+- ERROR
+- DEBUG
+- TRACE
+
+```shell
+unset TF_LOG_PATH
+```
+
+&nbsp;
+
+---
+
+## Terraform Import
+
+**Data Source**:
+
+```hcl
+data "aws_instance" "newserver" {
+    instance_id = "i-021s5daer1er5e640"
+}
+
+output nweserver {
+    value   = data.aws_instance.newserver.public_ip
+}
+```
+
+Retrieve data from a resource not created by terraform.
+
+**Import**: Only updates the tfstate.
+
+```shell
+# terraform import <resource_type>.<resource_name> <attribute>
+terraform import aws_instance.webserver-2 i-021s5daer1er5e640
+```
+
+So we need to update the config with the resource trying to be imported.
+
+```hcl
+resource "aws_instance" "newserver-2" {
+    # (resource arguments)
+}
+```
+
+Now the import will succeed.
+
+To retrieve details from aws ec2 instance:
+
+```shell
+terraform show -json | jq '.values.root_module.resources[] | select(.type == "aws_instance" and .name == "jade-mw")'
+```
+
+&nbsp;
+
+---
+
+## Terraform modules 2
+
+How to import a module
+
+[![image.png](https://i.postimg.cc/2SHJzHnf/image.png)](https://postimg.cc/dhyn6jWW)
+
+Create our own module
+
+```shell
+mkdir /root/terraform-projects/modules/payroll-app
+#app_server.tf dynamodb_table.tf s3_bucket.tf variables.tf
+```
+
+app_server.tf
+
+```hcl
+resource "aws_instance" "app_server" {
+    ami             = var.ami
+    instance_tpe    = "t2.medium"
+    tags = {
+        Name = "${var.app_region}-app-server"
+    }
+    depends_on = [ aws_dynammodb_table.payroll_db,
+                   aws_s3_bucket.payroll_data
+                 ]
+}
+```
+
+s3_bucket.tf
+
+```hcl
+resource "aws_s3_bucket" "payroll_data" {
+    bucket = "${var.app_region}-${var.bucket}"
+}
+```
+
+dynamodb_table.tf
+
+```hcl
+resource "aws_dynamodb_table" "payroll_db" {
+    name            = "user_data"
+    billing_mode    = "PAY_PER_REQUEST"
+    hash_key        = "EmployeeID"
+
+    attribute {
+        name = "EmployeeID"
+        type = "N"
+    }
+}
+```
+
+variables.tf
+
+```hcl
+variable "app_region" {
+    type = string
+}
+variable "bucket" {
+    default = "flexit-payroll-alpha-222001c"
+}
+variable "ami" {
+    type = string
+}
+```
+
+[![image.png](https://i.postimg.cc/k4Py981T/image.png)](https://postimg.cc/7CXznCyz)
+
+[![image.png](https://i.postimg.cc/gcS6H8ym/image.png)](https://postimg.cc/w3Nv6tbG)
+
+./us-payrolll-app/main.tf
+
+```hcl
+module "us_payroll" {
+    source = "../modules/payroll-app"
+    app_region  = "us-east-1"
+    ami         = "ami-242das45ea156e"
+}
+```
+
+./uk-payrolll-app/main.tf
+
+```hcl
+module "uk_payroll" {
+    source = "../modules/payroll-app"
+    app_region  = "eu-west-1"
+    ami         = "ami-242das12ea156f"
+}
+```
+
+> [!IMPORTANT]
+> us_payroll and uk_payroll modules are parents of payroll-app as they call the child module.
+
+## Functions
+
+```shell
+terraform console
+```
+
+To test function or interpolate variables.
+
+length()
+toset()
+file()
+ceil()
+floor()
+keys()
+values()
+lookup()
+split()
+join()
+
+&nbsp;
+
+---
+
+## Terraform Workspaces (OSS)
+
+[![image.png](https://i.postimg.cc/bY9nJ7Dv/image.png)](https://postimg.cc/4nny2F1C)
+
+We can create multiple projects from the same config.
+
+```shell
+terraform workspace new ProjectA
+```
+
+To see created workspaces
+
+```shell
+terraform workspace list
+```
+
+variables.tf
+
+```hcl
+variable region {
+    default = "ca-central-1"
+}
+variable instance_type {
+    default = "t2.micro"
+}
+variable ami {
+    type = map
+    default = {
+        "ProjectA" = "ami-0dasdas54a6s",
+        "ProjectB" = "ami-0das5dsa36ds"
+    }
+}
+```
+
+main.tf
+
+```hcl
+resource "aws_instance" "project" {
+    ami             = lookup(var.ami, terraform.workspace)
+    instance_type   = var.instance_tpye
+    tags = {
+        Name = terraform.workspace
+    }
+}
+```
+
+To switch between workspaces
+
+```shell
+terraform workspace select ProjectA
+```
+
+Stores the state file in **terraform.tfstate.d** where you will have a new folder for each workspace.
